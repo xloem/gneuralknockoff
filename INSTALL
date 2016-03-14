@@ -1,0 +1,6 @@
+To compile this program:
+> cd src
+> gcc gneural_network.c -lm -O3 -o gneural_network
+
+To install it permanently on your system:
+> sudo mv gneural_network /usr/bin/.
