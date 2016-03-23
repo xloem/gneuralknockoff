@@ -1,0 +1,29 @@
+--- gneural_network release 0.5.0
+
+    18 Mar. 2016, J.M. Sellier, jeanmichel.sellier@gmail.com
+
+    --- The installation process has been standardized as
+        it should be for a GNU package.
+
+    --- A scripting language has been implemented which allows
+        the user to define his/her own neural network without
+        having to go through the source code.
+        Plenty of options are now possible, for instance, the
+        user can define the number of neurons, their connections,
+        their discriminant, activation functions, etc.
+        The user can choose among four different methods for
+        training the neural network which can be saved for
+        later use.
+
+    --- Some part of the code have been optimized to run faster.
+
+    --- A test folder has been created containing a commented
+        example of script which defines a neural network for
+        a simple curve fitting task.
+
+--- gneural_network release 0.0.1
+
+    03 Mar. 2016, J.M. Sellier, jeanmichel.sellier@gmail.com
+
+    --- First release of gneural_network
+
