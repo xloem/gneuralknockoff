@@ -20,10 +20,14 @@
 
 */
 
-// returns a number between 0. and 1.
-inline double rnd(void){
- ISEED=fmod(1027.*ISEED,1048576.);
- return(ISEED/1048576.);
-}
+#ifndef RND_H
+#define RND_H
 
-// =========================================
+#include "includes.h"
+#include "defines.h"
+
+extern int ISEED;
+
+double rnd(void);
+
+#endif

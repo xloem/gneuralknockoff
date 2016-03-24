@@ -20,53 +20,21 @@
 
 */
 
-// feedforward propagation of information through the neural network
+#ifndef FEEDFORWARD_H
+#define FEEDFORWARD_H
 
-void feedforward(void){
- register int i,j;
- register int l,n;
+#include "includes.h"
+#include "defines.h"
+#include "structures.h"
+#include "binom.h"
+#include "fact.h"
+#include "activation.h"
 
- for(l=1;l<NETWORK.num_of_layers;l++){
-  for(n=0;n<NETWORK.num_of_neurons[l];n++){
-   int id;
-   double x;
-   x=0.;
-   id=NETWORK.neuron_id[l][n];
-   for(i=0;i<NEURON[id].nw;i++) NEURON[id].x[i]=NEURON[NEURON[id].connection[i]].output;
-   if(NEURON[id].discriminant==LINEAR){
-    for(i=0;i<NEURON[id].nw;i++)
-     x+=NEURON[id].x[i]*NEURON[id].w[i]; // linear product between w[] and x[]
-   } else if(NEURON[id].discriminant==LEGENDRE){
-    double a,tmp;
-    for(i=0;i<NEURON[id].nw;i++){
-     a=pow(2,i);
-     tmp=0.;
-     for(j=0;j<=i;j++){
-      tmp+=pow(NEURON[id].x[i],j)*binom(i,j)*binom((i+j-1)/2,j);
-     }
-     tmp*=a*NEURON[id].w[i];
-     x+=tmp;
-    }
-   } else if(NEURON[id].discriminant==LAGUERRE){
-    double tmp;
-    for(i=0;i<NEURON[id].nw;i++){
-     tmp=0.;
-     for(j=0;j<=i;j++) tmp+=binom(i,j)*pow(NEURON[id].x[i],j)*pow(-1,j)/fact(j);
-     tmp*=NEURON[id].w[i];
-     x+=tmp;
-    }
-   } else if(NEURON[id].discriminant==FOURIER){
-    double tmp;
-    for(i=0;i<NEURON[id].nw;i++){
-     tmp=0.;
-     for(j=0;j<=i;j++) tmp+=sin(2.*j*PI*NEURON[id].x[i]);
-     tmp*=NEURON[id].w[i];
-     x+=tmp;
-    }
+extern int NNUM;
+extern const double PI;
+extern neuron NEURON[];
+extern network NETWORK;
 
-   }
-   NEURON[id].output=activation(NEURON[id].activation,x);
-  }
- }
+void feedforward(void);
 
-}
+#endif

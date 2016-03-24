@@ -1,10 +1,26 @@
+--- gneural_network release 0.6.0
+
+    24 Mar. 2016, J.M. Sellier, jeanmichel.sellier@gmail.com
+
+    --- The code has been divided into proper header and
+        implementation files.
+    --- The code and the scripting language have been
+        generalized to handle a general number of neurons in
+        both the input and output layers.
+    --- A neural network can now be saved in a file specified by
+        the user (to be loaded afterwards).
+    --- Some part of the code have been further optimized
+        to run faster.
+    --- The user can now decide if the initial weights of a
+        network have to be randomized before the training.
+    --- Several important bugs have been fixed.
+
 --- gneural_network release 0.5.0
 
     18 Mar. 2016, J.M. Sellier, jeanmichel.sellier@gmail.com
 
     --- The installation process has been standardized as
         it should be for a GNU package.
-
     --- A scripting language has been implemented which allows
         the user to define his/her own neural network without
         having to go through the source code.
@@ -14,9 +30,7 @@
         The user can choose among four different methods for
         training the neural network which can be saved for
         later use.
-
     --- Some part of the code have been optimized to run faster.
-
     --- A test folder has been created containing a commented
         example of script which defines a neural network for
         a simple curve fitting task.

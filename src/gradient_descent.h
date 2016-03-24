@@ -20,74 +20,20 @@
 
 */
 
-// performs a gradient descent search of the best weights during the training process
+#ifndef GRADIENT_DESCENT_H
+#define GRADIENT_DESCENT_H
 
+#include "includes.h"
+#include "defines.h"
+#include "structures.h"
+#include "error.h"
 
-void gradient_descent(int output /* screen output - on/off */,
-                      int nxw /* number of cells in one direction of the weight space */,
-                      int maxiter /* maximum number of iterations */,
-                      double gamma /* step size */,
-                      double eps /* numerical accuracy */){
- register int i,j,k;
- int n;
- double delta;
- double err;
- double *wbackup;
- double *diff;
+extern int NNUM;
+extern int ERROR_TYPE;
+extern double WMIN;
+extern double WMAX;
+extern neuron NEURON[];
 
- wbackup=malloc((NNUM*MAX_IN+1)*sizeof(*wbackup));
- if(wbackup==NULL){
-  printf("GD: Not enough memory to allocate\ndouble *wbackup\n");
-  exit(0);
- }
+void gradient_descent(int,int,int,double,double);
 
- diff=malloc((NNUM*MAX_IN+1)*sizeof(*diff));
- if(diff==NULL){
-  printf("GD: Not enough memory to allocate\ndouble *diff\n");
-  exit(0);
- }
-
-
- err=1.e8; // just a big number
- delta=(WMAX-WMIN)/nxw;
-
- for(n=0;(n<maxiter) && (err>eps);n++){
-  // backup the weights before anything else
-  k=0;
-  for(i=0;i<NNUM;i++){
-   for(j=0;j<NEURON[i].nw;j++){
-    wbackup[k]=NEURON[i].w[j];
-    k++;
-   }
-  }
-  // computes the derivatives in all directions (central difference - second order)
-  double err_minus;
-  double err_plus;
-  // computes the derivative for every single direction
-  k=0;
-  for(i=0;i<NNUM;i++){
-   for(j=0;j<NEURON[i].nw;j++){
-    NEURON[i].w[j]=wbackup[k]-delta;
-    err_minus=error(L2);
-    NEURON[i].w[j]=wbackup[k]+delta;
-    err_plus=error(L2);
-    diff[k]=0.5*(err_plus-err_minus)/delta;
-    k++;
-   }
-  }
-  // updates the weights according to the gradient
-  k=0;
-  for(i=0;i<NNUM;i++){
-   for(j=0;j<NEURON[i].nw;j++){
-    NEURON[i].w[j]=wbackup[k]-gamma*diff[k];
-    k++;
-   }
-  }
-  // updates the error of the NN
-  err=error(L2);
-  if(output==ON) printf("GD: %d %g\n",n,err);
- }
- if(output==ON) printf("\n");
- free(wbackup);
- free(diff);
-}
+#endif

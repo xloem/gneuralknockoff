@@ -1,32 +1,14 @@
 # ###################################################
 # author        : Jean Michel Sellier
 # created       : 17 Mar. 2016, Cassibile (SR), Italy
-# last modified : 18 Mar. 2016, Cassibile (SR), Italy
+# last modified : 23 Mar. 2016, Cassibile (SR), Italy
 # purpose       :  The purpose of the following
 #                  example is to fit a curve given by
 #                  three points.
 # ###################################################
 
 # load a previously saved neural network
-# LOAD_NEURAL_NETWORK
-
-# total number of training data
-# for supervised learning
-NUMBER_OF_TRAINING_POINTS 3
-
-# training data - input
-TRAINING_POINT IN 0 0.15
-TRAINING_POINT IN 1 0.60
-TRAINING_POINT IN 2 0.80
-
-# training data - output
-TRAINING_POINT OUT 0 0.387298335
-TRAINING_POINT OUT 1 0.774596669
-TRAINING_POINT OUT 2 0.894427191
-
-# space search for the weights
-WEIGHT_MINIMUM -1
-WEIGHT_MAXIMUM +1
+# LOAD_NEURAL_NETWORK network.net
 
 # total number of neurons
 NUMBER_OF_NEURONS 6
@@ -96,6 +78,32 @@ NEURON 5 CONNECTION 1 2
 NEURON 5 CONNECTION 2 3
 NEURON 5 CONNECTION 3 4
 
+# total number of training data
+# for supervised learning
+NUMBER_OF_TRAINING_POINTS 3
+
+# training data - input
+# syntax: TRAINING_POINT IN point_index neuron_index connection_index value
+TRAINING_POINT IN 0 0 0 0.15
+TRAINING_POINT IN 1 0 0 0.60
+TRAINING_POINT IN 2 0 0 0.80
+
+# training data - output
+# syntax: TRAINING_POINT OUT point_index neuron_index value
+TRAINING_POINT OUT 0 5 0.387298335
+TRAINING_POINT OUT 1 5 0.774596669
+TRAINING_POINT OUT 2 5 0.894427191
+
+# initial randomization of weights = ON/OFF
+INITIAL_WEIGHTS_RANDOMIZATION ON
+
+# space search for the weights
+WEIGHT_MINIMUM -1
+WEIGHT_MAXIMUM +1
+
+# specify the error function for the training process
+ERROR_TYPE L2
+
 # optimization method for the training process
 # general syntax: TRAINING_METHOD method values
 
@@ -139,28 +147,29 @@ TRAINING_METHOD SIMULATED_ANNEALING ON 25 25000 1.e-4 8.0 1.e-2
 # and neuron #(NUMBER_OF_NEURONS-1) is the output
 SAVE_OUTPUT ON
 OUTPUT_FILE_NAME final_results.dat
-NUMBER_OF_POINTS 21
-INPUT_POINT 0 0.0
-INPUT_POINT 1 0.05
-INPUT_POINT 2 0.10
-INPUT_POINT 3 0.15
-INPUT_POINT 4 0.20
-INPUT_POINT 5 0.25
-INPUT_POINT 6 0.30
-INPUT_POINT 7 0.35
-INPUT_POINT 8 0.40
-INPUT_POINT 9 0.45
-INPUT_POINT 10 0.50
-INPUT_POINT 11 0.55
-INPUT_POINT 12 0.60
-INPUT_POINT 13 0.65
-INPUT_POINT 14 0.70
-INPUT_POINT 15 0.75
-INPUT_POINT 16 0.80
-INPUT_POINT 17 0.85
-INPUT_POINT 18 0.90
-INPUT_POINT 19 0.95
-INPUT_POINT 20 1.0
+NUMBER_OF_INPUT_POINTS 21
+# syntax: INPUT_POINT point_index neuron_index connection_index value
+NETWORK_INPUT 0 0 0 0.0
+NETWORK_INPUT 1 0 0 0.05
+NETWORK_INPUT 2 0 0 0.10
+NETWORK_INPUT 3 0 0 0.15
+NETWORK_INPUT 4 0 0 0.20
+NETWORK_INPUT 5 0 0 0.25
+NETWORK_INPUT 6 0 0 0.30
+NETWORK_INPUT 7 0 0 0.35
+NETWORK_INPUT 8 0 0 0.40
+NETWORK_INPUT 9 0 0 0.45
+NETWORK_INPUT 10 0 0 0.50
+NETWORK_INPUT 11 0 0 0.55
+NETWORK_INPUT 12 0 0 0.60
+NETWORK_INPUT 13 0 0 0.65
+NETWORK_INPUT 14 0 0 0.70
+NETWORK_INPUT 15 0 0 0.75
+NETWORK_INPUT 16 0 0 0.80
+NETWORK_INPUT 17 0 0 0.85
+NETWORK_INPUT 18 0 0 0.90
+NETWORK_INPUT 19 0 0 0.95
+NETWORK_INPUT 20 0 0 1.0
 
 # eventually save the neural network
-# SAVE_NEURAL_NETWORK
+# SAVE_NEURAL_NETWORK network.net

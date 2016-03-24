@@ -20,17 +20,12 @@
 
 */
 
-// returns the factorial of a given integer
+#ifndef FACT_H
+#define FACT_H
 
-// originally written by : Jean Michel Sellier
-// improved by           : Dmytriy Tereschenko
+#include "includes.h"
+#include "defines.h"
 
-inline int fact(int n){
- int res=1;
+uint64_t fact(uint32_t);
 
- while(n){
-  res*=n;
-  --n;
- }
- return(res);
-}
+#endif

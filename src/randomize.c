@@ -1,4 +1,4 @@
-/* load.h -- This belongs to gneural_network
+/* randomize.c -- This belongs to gneural_network
 
    gneural_network is the GNU package which implements a programmable neural network.
 
@@ -20,18 +20,16 @@
 
 */
 
-#ifndef LOAD_H
-#define LOAD_H
+// assigns weights randomly for each neuron
 
-#include "includes.h"
-#include "defines.h"
-#include "structures.h"
+#include "randomize.h"
 
-extern int NNUM;
-extern neuron NEURON[];
-extern network NETWORK;
-extern char LOAD_NEURAL_NETWORK_FILENAME[];
+void randomize(void){
+ register int i,n;
 
-void load(int);
-
-#endif
+ for(n=0;n<NNUM;n++){
+  for(i=0;i<NEURON[n].nw;i++){
+   NEURON[n].w[i]=WMIN+rnd()*(WMAX-WMIN);
+  }
+ }
+}

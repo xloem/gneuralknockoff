@@ -1,4 +1,4 @@
-/* load.h -- This belongs to gneural_network
+/* rnd.c -- This belongs to gneural_network
 
    gneural_network is the GNU package which implements a programmable neural network.
 
@@ -20,18 +20,13 @@
 
 */
 
-#ifndef LOAD_H
-#define LOAD_H
+// returns a number between 0. and 1.
 
-#include "includes.h"
-#include "defines.h"
-#include "structures.h"
+#include "rnd.h"
 
-extern int NNUM;
-extern neuron NEURON[];
-extern network NETWORK;
-extern char LOAD_NEURAL_NETWORK_FILENAME[];
+inline double rnd(void){
+ ISEED=fmod(1027.*ISEED,1048576.);
+ return(ISEED/1048576.);
+}
 
-void load(int);
-
-#endif
+// =========================================

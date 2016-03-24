@@ -22,9 +22,9 @@
 
 // =================================================================
 // File Name        : gneural_network.c
-// Version          : release 0.5.0
+// Version          : release 0.6.0
 // Creation         : 11 Nov. 2012, Cassibile (SR), Italy
-// Last Revision    : 18 Mar. 2016, Cassibile (SR), Italy
+// Last Revision    : 23 Mar. 2016, Cassibile (SR), Italy
 // =================================================================
 
 /*
@@ -43,78 +43,12 @@
 
 */
 
-#include<getopt.h>
-#include<stdio.h>
-#include<stdlib.h>
-#include<math.h>
-#include<memory.h>
-#include<time.h>
-#ifdef  HAVE_STRING_H
-#include<string.h>
-#else
-#include<strings.h>
-#endif
-
-// maximum number of training point
-#define MAX_TRAINING_POINTS 8
-
-// maximum allowed number of inputs per neuron
-#define MAX_IN 16
-
-// maximum total number of neurons
-#define MAX_NUM_NEURONS 32
-
-// maximum number of layers
-#define MAX_NUM_LAYERS 16
-
-// maximum number of points in output file
-#define MAX_NUM_POINTS 64
-
-// definition of various internal types
-#define OFF 0
-#define ON  1
-// activation functions
-#define TANH     0
-#define EXP      1
-#define ID       2
-#define POL1     3
-#define POL2     4
-// discriminant functions
-#define LINEAR   0
-#define LEGENDRE 1
-#define LAGUERRE 2
-#define FOURIER  3
-// error/cost/target functions
-#define L2   0
-#define LINF 1
-#define COS  2
-// optimization methods
-#define SIMULATED_ANNEALING 0
-#define RANDOM_SEARCH       1
-#define GRADIENT_DESCENT    2
-#define GENETIC_ALGORITHM   3
+#include "includes.h"
+#include "defines.h"
+#include "structures.h"
 
 // constants
 const double PI=3.141592654;
-
-typedef struct _neuron{
- int nw;
- // connection[i] is the identification number of the neuron which
- // output is connected to the i-th input branch of the neuron
- int connection[MAX_IN];
- int activation; // type of activation function
- int discriminant; // type of discriminant function
- double x[MAX_IN]; // n inputs
- double w[MAX_IN]; // n weights
- double output;    // one output
-} neuron;
-
-typedef struct _network{
- int num_of_layers; // total number of layers
- int num_of_neurons[MAX_NUM_LAYERS]; // number of neurons per layer
- // neuron_id[i][j] is the global identification number of the j-th neuron in the i-th layer
- int neuron_id[MAX_NUM_LAYERS][MAX_NUM_NEURONS];
-} network;
 
 struct option longopts[] =
 {
@@ -133,28 +67,32 @@ int VERBOSITY;
 int MMAX;
 int NMAX;
 int NPOP;
-int RATE;
 int NXW;
 int MAXITER;
 int SAVE_OUTPUT;
+int ERROR_TYPE;
 int NUMBER_OF_POINTS;
 int LOAD_NEURAL_NETWORK;
 int SAVE_NEURAL_NETWORK;
+int INITIAL_WEIGHTS_RANDOMIZATION;
 
+double RATE;
 double WMIN;
 double WMAX;
-double X[MAX_TRAINING_POINTS];
-double Y[MAX_TRAINING_POINTS];
+double X[MAX_TRAINING_POINTS][MAX_NUM_NEURONS][MAX_IN];
+double Y[MAX_TRAINING_POINTS][MAX_NUM_NEURONS];
 double KBTMIN;
 double KBTMAX;
 double GAMMA;
 double ACCURACY;
-double OUTPUT_X[MAX_NUM_POINTS];
+double OUTPUT_X[MAX_NUM_POINTS][MAX_NUM_NEURONS][MAX_IN];
 
 FILE *fp;
 
 static char *progname;
 char OUTPUT_FILENAME[256];
+char LOAD_NEURAL_NETWORK_FILENAME[256];
+char SAVE_NEURAL_NETWORK_FILENAME[256];
 
 #include "rnd.h"
 #include "parser.h"
@@ -231,7 +169,7 @@ Report bugs to jeanmichel.sellier@gmail.com\n");
 
   if(v){
    /* Print version number.  */
-   printf("gneural_network - Gneural Network 0.5.0\n");
+   printf("gneural_network - Gneural Network 0.6.0\n");
    /* xgettext: no-wrap */
    printf("\n");
    printf("\
@@ -257,6 +195,8 @@ For more information about these matters, see the file named COPYING.\n",
    SAVE_OUTPUT=OFF;
    LOAD_NEURAL_NETWORK=OFF;
    SAVE_NEURAL_NETWORK=OFF;
+   INITIAL_WEIGHTS_RANDOMIZATION=ON;
+   ERROR_TYPE=L2;
    parser();
    fclose(fp);
 
@@ -266,7 +206,8 @@ For more information about these matters, see the file named COPYING.\n",
    if(LOAD_NEURAL_NETWORK==OFF){
     // assigns weights randomly for each neuron
     // before the training process
-    randomize();
+    if(INITIAL_WEIGHTS_RANDOMIZATION==ON)
+     randomize();
 
     // network training method
     if(OPTIMIZATION_METHOD==SIMULATED_ANNEALING)
@@ -288,12 +229,23 @@ For more information about these matters, see the file named COPYING.\n",
     // saves the final curve
     fp=fopen(OUTPUT_FILENAME,"w");
     for(n=0;n<NUMBER_OF_POINTS;n++){
+     int i,j;
      double x,y;
-     x=OUTPUT_X[n];
-     NEURON[0].x[0]=NEURON[0].output=x;
+     for(i=0;i<NETWORK.num_of_neurons[0];i++){
+      int neuron_id;
+      neuron_id=NETWORK.neuron_id[0][i];
+      for(j=0;j<NEURON[neuron_id].nw;j++){
+       x=OUTPUT_X[n][neuron_id][j];
+       NEURON[neuron_id].x[j]=NEURON[neuron_id].output=x;
+      }
+     }
      feedforward();
-     y=NEURON[NNUM-1].output;
-     fprintf(fp,"%g %g\n",x,y);
+     fprintf(fp,"%g ",x);
+     for(j=0;j<NETWORK.num_of_neurons[NETWORK.num_of_layers-1];j++){
+      y=NEURON[NETWORK.neuron_id[NETWORK.num_of_layers-1][j]].output;
+      fprintf(fp,"%g ",y);
+     }
+     fprintf(fp,"\n");
     }
     fclose(fp);
    }

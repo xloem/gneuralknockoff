@@ -1,4 +1,4 @@
-/* load.h -- This belongs to gneural_network
+/* includes.h -- This belongs to gneural_network
 
    gneural_network is the GNU package which implements a programmable neural network.
 
@@ -20,18 +20,16 @@
 
 */
 
-#ifndef LOAD_H
-#define LOAD_H
-
-#include "includes.h"
-#include "defines.h"
-#include "structures.h"
-
-extern int NNUM;
-extern neuron NEURON[];
-extern network NETWORK;
-extern char LOAD_NEURAL_NETWORK_FILENAME[];
-
-void load(int);
-
+#include<getopt.h>
+#include<stdio.h>
+#include<stdlib.h>
+#include<inttypes.h>
+#include<stdint.h>
+#include<math.h>
+#include<memory.h>
+#include<time.h>
+#ifdef  HAVE_STRING_H
+#include<string.h>
+#else
+#include<strings.h>
 #endif

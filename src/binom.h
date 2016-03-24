@@ -20,10 +20,13 @@
 
 */
 
-// returns the binomial coefficient of two numbers (n over k)
+#ifndef BINOM_H
+#define BINOM_H
 
-inline int binom(int n,int k){
- int res;
- res=fact(n)/(fact(k)*fact(n-k));
- return(res);
-}
+#include "includes.h"
+#include "defines.h"
+#include "fact.h"
+
+int binom(int,int);
+
+#endif

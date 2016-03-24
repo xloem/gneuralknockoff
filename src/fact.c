@@ -1,4 +1,4 @@
-/* load.h -- This belongs to gneural_network
+/* fact.c -- This belongs to gneural_network
 
    gneural_network is the GNU package which implements a programmable neural network.
 
@@ -20,18 +20,19 @@
 
 */
 
-#ifndef LOAD_H
-#define LOAD_H
+// returns the factorial of a given integer
 
-#include "includes.h"
-#include "defines.h"
-#include "structures.h"
+// originally written by : Jean Michel Sellier
+// improved by           : Dmytriy Tereschenko
 
-extern int NNUM;
-extern neuron NEURON[];
-extern network NETWORK;
-extern char LOAD_NEURAL_NETWORK_FILENAME[];
+#include "fact.h"
 
-void load(int);
+inline uint64_t fact(uint32_t n){
+ uint64_t res=1;
 
-#endif
+ while(n){
+  res*=n;
+  --n;
+ }
+ return(res);
+}

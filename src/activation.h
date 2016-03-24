@@ -20,28 +20,12 @@
 
 */
 
-// returns the specified activation function given the input x
+#ifndef ACTIVATION_H
+#define ACTIVATION_H
 
-inline double activation(int type,double x){
- switch(type){
-  case TANH:
-   return(tanh(x));
-   break;
-  case EXP:
-   return(1./(1.+exp(-x)));
-   break;
-  case ID:
-   return x;
-   break;
-  case POL1:
-   return(1.+x);
-   break;
-  case POL2:
-   return(1.+x+x*x);
-   break;
-  default:
-   printf("unknown activation function!\n");
-   exit(0);
- }
-}
+#include "includes.h"
+#include "defines.h"
 
+double activation(int,double);
+
+#endif

@@ -20,50 +20,21 @@
 
 */
 
-// compute the specified error of a (training) neural network
+#ifndef ERROR_H
+#define ERROR_H
 
-double error(int type){
- register int n;
- double err;
+#include "includes.h"
+#include "defines.h"
+#include "structures.h"
+#include "feedforward.h"
 
- err=0.;
+extern int NNUM;
+extern int NDATA;
+extern double X[MAX_TRAINING_POINTS][MAX_NUM_NEURONS][MAX_IN];
+extern double Y[MAX_TRAINING_POINTS][MAX_NUM_NEURONS];
+extern neuron NEURON[];
+extern network NETWORK;
 
- // Linf norm
- if(type==LINF){
-  err=-1.e8;
-  for(n=0;n<NDATA;n++){
-   NEURON[0].x[0]=NEURON[0].output=X[n];
-   feedforward();
-   if(err<fabs(NEURON[5].output-Y[n])) err=fabs(NEURON[5].output-Y[n]);
-  }
-  return(err);
- }
- // L2 norm
- if(type==L2){
-  for(n=0;n<NDATA;n++){
-   NEURON[0].x[0]=NEURON[0].output=X[n];
-   feedforward();
-   err+=pow(Y[n]-NEURON[5].output,2.);
-  }
-  return(sqrt(err));
- }
- // cosine similarity
- if(type==COS){
-  double s,x,y;
-  s=0.;
-  x=0.;
-  y=0.;
-  for(n=0;n<NDATA;n++){
-   NEURON[0].x[0]=NEURON[0].output=X[n];
-   feedforward();
-   x+=pow(NEURON[5].output,2.);
-   y+=pow(Y[n],2.);
-   s+=NEURON[5].output*Y[n];
-  }
-  x=sqrt(x);
-  y=sqrt(y);
-  err=s/(x*y);
-  return(err);
- }
- return(0.);
-}
+double error(int);
+
+#endif

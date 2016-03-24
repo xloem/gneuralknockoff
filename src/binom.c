@@ -1,4 +1,4 @@
-/* load.h -- This belongs to gneural_network
+/* binom.c -- This belongs to gneural_network
 
    gneural_network is the GNU package which implements a programmable neural network.
 
@@ -20,18 +20,12 @@
 
 */
 
-#ifndef LOAD_H
-#define LOAD_H
+// returns the binomial coefficient of two numbers (n over k)
 
-#include "includes.h"
-#include "defines.h"
-#include "structures.h"
+#include "binom.h"
 
-extern int NNUM;
-extern neuron NEURON[];
-extern network NETWORK;
-extern char LOAD_NEURAL_NETWORK_FILENAME[];
-
-void load(int);
-
-#endif
+inline int binom(int n,int k){
+ int res;
+ res=fact(n)/(fact(k)*fact(n-k));
+ return(res);
+}

@@ -22,12 +22,20 @@
 
 // assigns weights randomly for each neuron
 
-void randomize(void){
- register int i,n;
+#ifndef RANDOMIZE_H
+#define RANDOMIZE_H
 
- for(n=0;n<NNUM;n++){
-  for(i=0;i<NEURON[n].nw;i++){
-   NEURON[n].w[i]=WMIN+rnd()*(WMAX-WMIN);
-  }
- }
-}
+#include "includes.h"
+#include "defines.h"
+#include "structures.h"
+#include "rnd.h"
+
+extern int NNUM;
+extern double WMIN;
+extern double WMAX;
+extern neuron NEURON[];
+extern network NETWORK;
+
+void randomize(void);
+
+#endif

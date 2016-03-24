@@ -1,4 +1,4 @@
-/* load.h -- This belongs to gneural_network
+/* activation.c -- This belongs to gneural_network
 
    gneural_network is the GNU package which implements a programmable neural network.
 
@@ -20,18 +20,30 @@
 
 */
 
-#ifndef LOAD_H
-#define LOAD_H
+// returns the specified activation function given the input x
 
-#include "includes.h"
-#include "defines.h"
-#include "structures.h"
+#include "activation.h"
 
-extern int NNUM;
-extern neuron NEURON[];
-extern network NETWORK;
-extern char LOAD_NEURAL_NETWORK_FILENAME[];
+inline double activation(int type,double x){
+ switch(type){
+  case TANH:
+   return(tanh(x));
+   break;
+  case EXP:
+   return(1./(1.+exp(-x)));
+   break;
+  case ID:
+   return x;
+   break;
+  case POL1:
+   return(1.+x);
+   break;
+  case POL2:
+   return(1.+x+x*x);
+   break;
+  default:
+   printf("unknown activation function!\n");
+   exit(0);
+ }
+}
 
-void load(int);
-
-#endif
