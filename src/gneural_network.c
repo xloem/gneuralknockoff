@@ -22,9 +22,9 @@
 
 // =================================================================
 // File Name        : gneural_network.c
-// Version          : release 0.6.0
+// Version          : release 0.8.0
 // Creation         : 11 Nov. 2012, Cassibile (SR), Italy
-// Last Revision    : 23 Mar. 2016, Cassibile (SR), Italy
+// Last Revision    : 01 Apr. 2016, Cassibile (SR), Italy
 // =================================================================
 
 /*
@@ -104,6 +104,7 @@ char SAVE_NEURAL_NETWORK_FILENAME[256];
 #include "activation.h"
 #include "feedforward.h"
 #include "error.h"
+#include "msmco.h"
 #include "random_search.h"
 #include "simulated_annealing.h"
 #include "gradient_descent.h"
@@ -169,7 +170,7 @@ Report bugs to jeanmichel.sellier@gmail.com\n");
 
   if(v){
    /* Print version number.  */
-   printf("gneural_network - Gneural Network 0.6.0\n");
+   printf("gneural_network - Gneural Network 0.8.0\n");
    /* xgettext: no-wrap */
    printf("\n");
    printf("\
@@ -218,6 +219,8 @@ For more information about these matters, see the file named COPYING.\n",
      gradient_descent(VERBOSITY,NXW,MAXITER,GAMMA,ACCURACY);
     if(OPTIMIZATION_METHOD==GENETIC_ALGORITHM)
      genetic_algorithm(VERBOSITY,NMAX,NPOP,RATE,ACCURACY);
+    if(OPTIMIZATION_METHOD==MSMCO)
+     msmco(VERBOSITY,MMAX,NMAX,RATE);
     if(SAVE_NEURAL_NETWORK==ON) save(ON);
    } else {
     // load the neural network
@@ -237,10 +240,10 @@ For more information about these matters, see the file named COPYING.\n",
       for(j=0;j<NEURON[neuron_id].nw;j++){
        x=OUTPUT_X[n][neuron_id][j];
        NEURON[neuron_id].x[j]=NEURON[neuron_id].output=x;
+       fprintf(fp,"%g ",x);
       }
      }
      feedforward();
-     fprintf(fp,"%g ",x);
      for(j=0;j<NETWORK.num_of_neurons[NETWORK.num_of_layers-1];j++){
       y=NEURON[NETWORK.neuron_id[NETWORK.num_of_layers-1][j]].output;
       fprintf(fp,"%g ",y);

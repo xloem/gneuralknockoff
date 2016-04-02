@@ -296,7 +296,7 @@ processing the input file\n\
      printf("global neuron index out of range!\n");
      exit(0);
     }
-    printf("NETWORK ASSIGN_NEURON_TO_LAYER %d %d %d\n [OK]",layer_id,local_neuron_id,global_neuron_id);
+    printf("NETWORK ASSIGN_NEURON_TO_LAYER %d %d %d [OK]\n",layer_id,local_neuron_id,global_neuron_id);
     NETWORK.neuron_id[layer_id][local_neuron_id]=global_neuron_id;
    } else {
     printf("the specified network feature is unknown!\n");
@@ -458,8 +458,8 @@ processing the input file\n\
      printf("MMAX must be an integer!\n");
      exit(0);
     }
-    if(mmax<0){
-     printf("MMAX must be positive!\n");
+    if(mmax<2){
+     printf("MMAX must be greater than 1!\n");
      exit(0);
     }
     ret=fscanf(fp,"%lf",&tmp);
@@ -653,6 +653,58 @@ processing the input file\n\
     NPOP=npop;
     RATE=rate;
     ACCURACY=eps;
+   }
+   // multi-scale Monte Carlo algorithm
+   // syntax: verbosity mmax nmax rate
+   // where:
+   // verbosity = ON/OFF
+   // mmax      = number of Monte Carlo outer iterations
+   // nmax      = number of MC inner iterations
+   // rate      = rate of change of the space of search at each iteration
+   else if(strcmp(s,"MSMCO")==0){
+    ret=fscanf(fp,"%s",s);
+    int verbosity;
+    if(strcmp(s,"ON")==0){
+     verbosity=ON;
+    }
+    else if(strcmp(s,"OFF")==0){
+     verbosity=OFF;
+    } else {
+     printf("verbosity can be only ON or OFF!\n");
+     exit(0);
+    }
+    ret=fscanf(fp,"%lf",&tmp);
+    int mmax=(int)(tmp);
+    if(mmax!=tmp){
+     printf("MMAX must be an integer!\n");
+     exit(0);
+    }
+    if(mmax<0){
+     printf("MMAX must be positive!\n");
+     exit(0);
+    }
+    ret=fscanf(fp,"%lf",&tmp);
+    int nmax=(int)(tmp);
+    if(nmax!=tmp){
+     printf("NMAX must be an integer!\n");
+     exit(0);
+    }
+    if(nmax<0){
+     printf("NMAX must be positive!\n");
+     exit(0);
+    }
+    ret=fscanf(fp,"%lf",&tmp);
+    double rate=tmp;
+    if(rate<=0.){
+     printf("rate must be positive!\n");
+     exit(0);
+    }
+    printf("OPTIMIZATION METHOD = MULTI-SCALE MONTE CARLO OPTIMIZATION %d %d %g [OK]\n",mmax,nmax,rate);
+    VERBOSITY=verbosity;
+    OPTIMIZATION_METHOD=MSMCO;
+    MMAX=mmax;
+    NMAX=nmax;
+    RATE=rate;
    } else {
     printf("unknown training method!\n");
     exit(0);
@@ -749,7 +801,7 @@ processing the input file\n\
    double val;
    ret=fscanf(fp,"%lf",&tmp);
    val=tmp;
-   printf("INPUT POINT #%d %d %d = %g [OK]\n",num,neu,conn,val);
+   printf("NETWORK INPUT POINT #%d %d %d = %g [OK]\n",num,neu,conn,val);
    OUTPUT_X[num][neu][conn]=val;
   }
   // save a neural network (structure and weights) in the file network.dat
@@ -800,5 +852,6 @@ processing the input file\n\
     exit(0);
    }
   }
+  sprintf(s,""); // empty the buffer
  }while(!feof(fp));
 }

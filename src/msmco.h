@@ -1,4 +1,4 @@
-/* binom.c -- This belongs to gneural_network
+/* msmco.h -- This belongs to gneural_network
 
    gneural_network is the GNU package which implements a programmable neural network.
 
@@ -20,18 +20,19 @@
 
 */
 
-// returns the binomial coefficient of two numbers (n over k)
+#ifndef MSMCO_H
+#define MSMCO_H
 
-#include "binom.h"
+#include "includes.h"
+#include "defines.h"
+#include "structures.h"
+#include "error.h"
+#include "randomize.h"
 
-// originally programmed by : Jean Michel Sellier
-// improved by              : Gergo Barany
+extern int NNUM;
+extern int ERROR_TYPE;
+extern neuron NEURON[];
 
-inline int binom(int n,int k){
- double res=1;
- register int i;
- for(i=1;i<=k;i++){
-  res*=(double)(n+1-i)/i;
- }
- return(round(res));
-}
+void msmco(int,int,int,double);
+
+#endif

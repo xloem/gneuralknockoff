@@ -57,4 +57,4 @@
 #define RANDOM_SEARCH       1
 #define GRADIENT_DESCENT    2
 #define GENETIC_ALGORITHM   3
-
+#define MSMCO               4

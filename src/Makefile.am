@@ -14,6 +14,7 @@ binom.c\
 fact.c\
 genetic_algorithm.c\
 gradient_descent.c\
+msmco.c\
 parser.c\
 random_search.c\
 save.c
