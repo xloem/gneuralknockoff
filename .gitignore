@@ -1,0 +1,12 @@
+Makefile
+src/Makefile
+autom4te.cache
+config.log
+config.status
+final_results.dat
+src/.deps
+src/*.o
+configure
+Makefile.in
+Makefile
+aclocal.m4
