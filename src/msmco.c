@@ -82,7 +82,7 @@ void msmco(network *nn, network_config *config) {
 
  // update the weights of the network with the best found solution
  for (k = 0, i = 0; i < nn->num_of_neurons; i++)
-  for (j = 0; j < nn->neurons[i].num_input; ++j, ++k) 
+  for (j = 0; j < nn->neurons[i].num_input; ++j, ++k)
    nn->neurons[i].w[j] = wbest[k];
 
  free(wbest);

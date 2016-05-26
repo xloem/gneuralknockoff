@@ -116,7 +116,7 @@ int network_set_neuron_number(network *nn, unsigned long nr)
 	return 0;
 
   if (nn->neurons)
-    	/* free the previous array if any */
+        /* free the previous array if any */
 	free(nn->neurons);
 
   nn->neurons = (neuron *)malloc(sizeof(neuron) * nr);
@@ -170,11 +170,11 @@ int network_neuron_set_connection_number(neuron* ne, unsigned int nr)
 	return -1;
 
   if (ne->num_input == nr)
-  	/* do nothing */
-  	return 0;
+        /* do nothing */
+        return 0;
 
   if (ne->connection)
-  	free(ne->connection);
+        free(ne->connection);
   if (ne->w)
 	free(ne->w);
 
@@ -303,7 +303,7 @@ void network_run_algorithm(network *nn, network_config *config)
    */
   if (__network_check(nn) < 0) {
     /* print the network topology in case of error... */
-  	network_print(nn);
+        network_print(nn);
 	exit(-1);
   }
 

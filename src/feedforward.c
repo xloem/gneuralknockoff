@@ -60,7 +60,7 @@ void feedforward(network *nn){
     case LEGENDRE:
      for (i = 0; i < ne->num_input; i++) {
       for (tmp = 0., j = 0;j <= i; j++)
-       	tmp += pow(ne->connection[i]->output,j)*binom(i,j)*binom((i+j-1)/2,j);
+        tmp += pow(ne->connection[i]->output,j)*binom(i,j)*binom((i+j-1)/2,j);
       tmp *= pow(2, i) * ne->w[i];
       x+=tmp;
      }

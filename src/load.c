@@ -43,7 +43,7 @@ void network_load(network *nn, network_config *config) {
 
  /* set the neuron number and alloc the required memory */
  network_set_neuron_number(nn, (unsigned int)tmp);
- 
+
  for (i = 0; i < nn->num_of_neurons; i++) {
   neuron *ne = &nn->neurons[i];
   ret = fscanf(fp, "%lf\n", &tmp); // neuron index - useless
@@ -58,7 +58,7 @@ void network_load(network *nn, network_config *config) {
 
   for (j = 0;j < ne->num_input; j++) {
    ret = fscanf(fp, "%lf\n", &tmp); // connections to other neurons
-   ne->connection[j] = &nn->neurons[(int)(tmp)]; 
+   ne->connection[j] = &nn->neurons[(int)(tmp)];
 //   NEURON[i].connection[j]=(int)(tmp);
   }
   ret = fscanf(fp, "%lf\n", &tmp); // activation function

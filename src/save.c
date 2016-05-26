@@ -130,4 +130,3 @@ void network_save_final_curve(network *nn, network_config *config)
   }
   fclose(fp);
 }
-

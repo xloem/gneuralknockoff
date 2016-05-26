@@ -45,7 +45,7 @@ double error(network *nn, network_config *config){
 #if 1
      ne->output = config->points_x[n][ne->global_id][0];
 #else
-     for (j = 0; j < ne->num_input; j++) 
+     for (j = 0; j < ne->num_input; j++)
       ne->output = config->points_x[n][i][j];
 #endif
     }

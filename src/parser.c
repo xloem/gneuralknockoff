@@ -613,15 +613,15 @@ processing the input file\n\
 	config->save_output = get_switch_value(fp, "save_output");
 	printf("SAVE_OUTPUT %s [OK]\n", switch_n[config->save_output]);
 	break;
-  
+
   // specify the output file name
   // syntax: OUTPUT_FILE_NAME filename
   case _OUTPUT_FILE_NAME: {
 	ret = fscanf(fp, "%s", s);
 	config->output_file_name = malloc(strlen(s) + 1);
 	strcpy(config->output_file_name, s);
-   	printf("OUTPUT FILE NAME = %s [OK]\n", config->output_file_name);
-  	break;
+        printf("OUTPUT FILE NAME = %s [OK]\n", config->output_file_name);
+        break;
   // specify the number of points for the output file
   // syntax: NUMBER_OF_INPUT_POINTS num
   case _NUMBER_OF_INPUT_POINTS: {
@@ -634,7 +634,7 @@ processing the input file\n\
 	printf("NUMBER OF INPUT POINTS = %d [OK]\n", num);
 	config->num_of_points = num;
 	};
-  	break;
+        break;
   // specify the input points for the output file
   // syntax: NETWORK_INPUT point_id neuron_id conn_id val
   case _NETWORK_INPUT: {
@@ -669,7 +669,7 @@ processing the input file\n\
 	strcpy(config->save_network_file_name, s);
 	config->save_neural_network = ON;
 	printf("SAVE NEURAL NETWORK to %s [OK]\n", s);
-  	};
+        };
 	break;
 
   // load a neural network (structure and weights) from the file network.dat
