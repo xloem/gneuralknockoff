@@ -22,9 +22,9 @@
 
 // =================================================================
 // File Name        : gneural_network.c
-// Version          : release 0.0.1
+// Version          : release 0.9.1
 // Creation         : 11 Nov. 2012, Cassibile (SR), Italy
-// Last Revision    : 04 Mar. 2016, Cassibile (SR), Italy
+// Last Revision    : 03 May  2016, Cassibile (SR), Italy
 // =================================================================
 
 /*
@@ -43,209 +43,142 @@
 
 */
 
-#include<stdio.h>
-#include<stdlib.h>
-#include<math.h>
-#include<memory.h>
-#include<string.h>
-#include<time.h>
+#include <includes.h>
+#include <defines.h>
+#include <network.h>
+#include <randomize.h>
+#include <parser.h>
+#include <load.h>
+#include <save.h>
 
-// maximum number of training point
-#define MAX_TRAINING_POINTS 8
-
-// maximum allowed number of inputs per neuron
-#define MAX_IN 16
-
-// maximum total number of neurons
-#define MAX_NUM_NEURONS 32
-
-// maximum number of layers
-#define MAX_NUM_LAYERS 16
-
-// definition of various internal types
-#define OFF 0
-#define ON  1
-// activation functions
-#define TANH     0
-#define EXP      1
-#define ID       2
-#define POL1     3
-#define POL2     4
-// discriminant functions
-#define LINEAR   0
-#define LEGENDRE 1
-#define LAGUERRE 2
-#define FOURIER  3
-// error/cost/target functions
-#define L2   0
-#define LINF 1
-#define COS  2
-
-// constants
-const double PI=3.141592654;
-
-typedef struct _neuron{
- int nw;
- // connection[i] is the identification number of the neuron which
- // output is connected to the i-th input branch of the neuron
- int connection[MAX_IN];
- int activation; // type of activation function
- int discriminant; // type of discriminant function
- double x[MAX_IN]; // n inputs
- double w[MAX_IN]; // n weights
- double output;    // one output
-} neuron;
-
-typedef struct _network{
- int num_of_layers; // total number of layers
- int num_of_neurons[MAX_NUM_LAYERS]; // number of neurons per layer
- // neuron_id[i][j] is the global identification number of the j-th neuron in the i-th layer
- int neuron_id[MAX_NUM_LAYERS][MAX_NUM_NEURONS];
-} network;
-
-neuron NEURON[MAX_NUM_NEURONS];
-network NETWORK;
-
-int NNUM;
-int NDATA;
-int ISEED;
-
-double WMIN;
-double WMAX;
-double X[MAX_TRAINING_POINTS];
-double Y[MAX_TRAINING_POINTS];
-
-FILE *fp;
-
-#include "rnd.h"
-#include "load.h"
-#include "save.h"
-#include "fact.h"
-#include "binom.h"
-#include "randomize.h"
-#include "activation.h"
-#include "feedforward.h"
-#include "error.h"
-#include "random_search.h"
-#include "simulated_annealing.h"
-#include "gradient_descent.h"
-#include "genetic_algorithm.h"
+static const struct option longopts[] =
+{
+  { "version", no_argument, NULL, 'v' },
+  { "help", no_argument, NULL, 'h' }
+};
 
 int main(int argc,char* argv[])
 {
- // initial value for random number generator
- ISEED=38467.;
+ int optc;
+ int h=0,v=0,lose=0,z=0;
+ char *progname;
+ FILE *fp = NULL;
 
- // ###############################################
- // The purpose of the following example is to fit
- // a curve given by three points. The points
- // are represented by the arrays below X[] and Y[]
- // ###############################################
+ network *nn = network_alloc();
+ if (!nn)
+	exit(-1);
 
- // data for supervised learning
- NDATA=3; // number of training points
-
- // training point coordinates
-/* X[0]=0.1; Y[0]=pow(X[0],2.);
- X[1]=0.5; Y[1]=pow(X[1],2.);
- X[2]=0.9; Y[2]=pow(X[2],2.);*/
- X[0]=0.15; Y[0]=sqrt(X[0]);
- X[1]=0.60; Y[1]=sqrt(X[1]);
- X[2]=0.80; Y[2]=sqrt(X[2]);
-
- // interval for the search of weights
-/* WMIN=-12.;
- WMAX=+12.;*/
- WMIN=-1.;
- WMAX=+1.;
-
- // total number of neurons in the network
- NNUM=6;
-
- // defines the number of inputs for every single neuron
- NEURON[0].nw=1;
- NEURON[1].nw=1;
- NEURON[2].nw=1;
- NEURON[3].nw=1;
- NEURON[4].nw=1;
- NEURON[5].nw=4;
-
- // defines the activation function for every neuron
- // first layer does not need to be specified as it has always an identity activation function
-// NEURON[0].activation=ID;
- NEURON[1].activation=TANH;
- NEURON[2].activation=TANH;
- NEURON[3].activation=TANH;
- NEURON[4].activation=TANH;
- NEURON[5].activation=TANH;
-
- // defines the discriminant function for every neuron
- // first layer does need to be speicified as it is the identity function
- NEURON[1].discriminant=LINEAR;
- NEURON[2].discriminant=LINEAR;
- NEURON[3].discriminant=LINEAR;
- NEURON[4].discriminant=LINEAR;
- NEURON[5].discriminant=LINEAR;
-
- // defines the topology of the network
- // in this specific case, the first (input) layer has 1 neurons,
- // the (only) hidden layer has four layers
- // the last (output) layer has only one neuron
- NETWORK.num_of_layers=3;
- NETWORK.num_of_neurons[0]=1;
- NETWORK.num_of_neurons[1]=4;
- NETWORK.num_of_neurons[2]=1;
- // first layer
- NETWORK.neuron_id[0][0]=0;
- // second layer
- NETWORK.neuron_id[1][0]=1;
- NETWORK.neuron_id[1][1]=2;
- NETWORK.neuron_id[1][2]=3;
- NETWORK.neuron_id[1][3]=4;
- // third layer
- NETWORK.neuron_id[2][0]=5;
-
- // defines connections between neurons
- // the first layer [0] does not need anything
- // as its neurons are not connected to any neuron
- NEURON[1].connection[0]=0;
- NEURON[2].connection[0]=0;
- NEURON[3].connection[0]=0;
- NEURON[4].connection[0]=0;
- NEURON[5].connection[0]=1;
- NEURON[5].connection[1]=2;
- NEURON[5].connection[2]=3;
- NEURON[5].connection[3]=4;
-
- // assigns weights randomly for each neuron
- // before the training process
- randomize();
-
- // network training method
- simulated_annealing(ON,25,25000,1.e-4,8.,1.e-2); // - simulated annealing
-// random_search(ON,500,1.e-3); // totally random search
-// gradient_descent(ON,32,5000,0.01,1.e-6); // gradient descent method
-// genetic_algorithm(ON,2048,1024,0.1,1.e-4); // home made genetic algorithm
-// hybrid_optimization(ON,32,50,25000,512,512,500,1.e-4,8.,0.1,1.e-6); // hybrid method
-
- int n;
- int nx=32;
- double min=0.;
- double max=1.;
-
- // saves the final curve
- fp=fopen("final_result.dat","w");
- for(n=0;n<nx;n++){
-  double x,y,r;
-  x=min+(n+0.5)*(max-min)/nx;
-  y=sqrt(x);
-//  y=pow(x,2.);
-  NEURON[0].x[0]=NEURON[0].output=x;
-  feedforward();
-  r=NEURON[5].output;
-  fprintf(fp,"%g %g %g\n",x,y,r);
+ network_config *config = network_config_alloc_default();
+ if (!config) {
+	network_free(nn);
+	exit(-1);
  }
- fclose(fp);
+ progname=argv[0];
 
- return(0);
+ while((optc=getopt_long(argc,argv,"hv",longopts,(int *) 0))!= EOF)
+  switch (optc){
+   case 'v':
+    v=1;
+    break;
+   case 'h':
+    h=1;
+    break;
+   default:
+    lose=1;
+    break;
+  }
+
+  if(optind==argc-1) z=1;
+  else if(lose || optind < argc){
+   // dump an error message and exit.
+   if (optind<argc) printf("Too many arguments\n");
+   printf("Try `%s --help' for more information.\n",progname);
+   exit(1);
+  }
+
+  // `help' should come first.  If `help' is requested, ignore the other options.
+  if(h){
+   /* Print help info and exit.  */
+   /* TRANSLATORS: --help output 1
+      no-wrap */
+   printf("\
+Gneural Network, the GNU package for neural networks.\nCopyright (C) 2016 Jean Michel Sellier.\n");
+   printf ("\n");
+   /* TRANSLATORS: --help output 2
+      no-wrap */
+   printf ("\
+Usage: %s [OPTION] file...\n",progname);
+
+   printf ("\n");
+   /* TRANSLATORS: --help output 3 : options 1/2
+      no-wrap */
+   printf("\
+  -h, --help          display this help and exit\n\
+  -v, --version       display version information and exit\n");
+
+   printf ("\n");
+   /* TRANSLATORS: --help output 5 (end)
+      TRANSLATORS, please don't forget to add the contact address for
+      your translation!
+      no-wrap */
+   printf ("\
+Report bugs to jeanmichel.sellier@gmail.com\n");
+      exit (0);
+    }
+
+  if(v){
+   /* Print version number.  */
+   printf("gneural_network - Gneural Network 0.9.1\n");
+   /* xgettext: no-wrap */
+   printf("\n");
+   printf("\
+Copyright (C) %s Jean Michel Sellier.\n\n\
+There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A\n\
+PARTICULAR PURPOSE.\n\
+You may redistribute copies of GNU %s under the terms\n\
+of the GNU General Public License.\n\
+For more information about these matters, see the file named COPYING.\n",
+"2016","Gneural Network");
+   exit (0);
+  }
+  else if (z){
+   // if the filename is specified then proceed with parsing the script and then run the calculations
+   fp=fopen(argv[1],"r");
+   // check, just in case the file does not exist...
+   if(fp==NULL){
+    printf("%s: fatal error in opening the input file %s\n",
+           progname,argv[1]);
+    exit(EXIT_FAILURE);
+   }
+   parser(nn, config, fp);
+   fclose(fp);
+
+   if (config->load_neural_network == OFF) {
+    // assigns weights randomly for each neuron
+    // before the training process
+    if (config->initial_weights_randomization == ON)
+     randomize(nn, config);
+
+    // network training method
+    network_run_algorithm(nn, config);
+
+    if (config->save_neural_network == ON)
+	network_save(nn, config);
+   } else
+	// load the neural network
+	network_load(nn, config);
+
+   if (config->save_output == ON){
+    printf("saving the final curve\n");
+    network_save_final_curve(nn, config);
+   }
+  } else {
+   // filename not specified
+   printf("%s: no input file\n",progname);
+   exit(-1);
+  }
+
+ network_free(nn);
+ network_config_free(config);
+ return 0;
 }
