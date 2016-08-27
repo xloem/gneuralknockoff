@@ -29,14 +29,26 @@
 
 inline double activation(enum activation_function type,double x){
  switch (type) {
-  case TANH:
+  case TANH: // scaled from -1 to 1
    return tanh(x);
    break;
-  case EXP:
+  case EXP:  // scaled from 0 to 1
    return 1./(1. + exp(-x));
    break;
   case ID:
    return x;
+   break;
+  case EXP_SIGNED: // scaled from -1 to 1
+   return 2./(1. + exp(-x)) - 1.;
+   break;
+  case SOFTSIGN:   // scaled from -1 to 1
+   return x / abs(x)+1;
+   break;
+  case RAMP:
+   return (x > 0.) ? x : 0.;
+   break;
+  case SOFTRAMP:
+   return log(1. + exp(x));
    break;
   case POL1:
    return 1. + x;

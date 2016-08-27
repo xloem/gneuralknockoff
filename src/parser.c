@@ -193,6 +193,10 @@ static void sub_neuron_parser(network *nn, network_config *config, FILE *fp)
   static const char *activation_names[] = {
 	[TANH]			= "TANH",
 	[EXP]			= "EXP",
+	[EXP_SIGNED]            = "EXP_SIGNED",
+	[SOFTSIGN]              = "SOFTSIGN",
+	[RAMP]                  = "RAMP",
+	[SOFTRAMP]              = "SOFTRAMP",
 	[ID]			= "ID",
 	[POL1]			= "POL1",
 	[POL2]			= "POL2",

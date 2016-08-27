@@ -53,6 +53,10 @@ enum switch_flag {
 enum activation_function {
 	TANH,
 	EXP,
+	EXP_SIGNED,
+	SOFTSIGN,
+	RAMP,
+	SOFTRAMP,
 	ID,
 	POL1,
 	POL2,
