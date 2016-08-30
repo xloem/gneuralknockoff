@@ -23,6 +23,7 @@
 #ifndef NETWORK_H
 #define NETWORK_H
 
+// #include <includes.h>
 #include <defines.h>
 
 typedef struct _neuron{
@@ -49,6 +50,22 @@ typedef struct _network{
  layer *layers;
  neuron *neurons;
 } network;
+
+struct newnet{
+    unsigned int inputcount;  // nodes 1 to this number (inclusive) are inputs (node zero is reserved for bias).
+    unsigned int outputcount; // nodes (nodecount minus this number) to nodecount (exclusive) are outputs.
+    unsigned int nodecount;   // this many total nodes.
+    enum activation_function *transfer;   // each node has its own transfer function.
+    enum discriminant_function *accum;    // each node has its own accumulation function.
+    unsigned int synapsecount; // this many connections (including bias) are used during one 'cycle' of the network.
+    double *weights;     // each synapse has its own weight.
+    unsigned int *sources;     // each synapse has its own source (bias nodes are source zero).
+    unsigned int *dests;       // each synapse has its own destination.
+};
+
+
+struct newnet *convertnetwork(struct _network *oldnet);
+
 
 typedef struct _network_config {
   unsigned char verbosity;
