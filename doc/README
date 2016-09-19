@@ -1,11 +1,40 @@
-Jean Michel Sellier, 04 Mar. 2016, Cassibile (SR), Italy.
 
-At this time, a manual is being developed but you need to wait.
 
-For now, there is no detailed documentation. The best way to proceed,
-in order to understand how to use gneural_network, is to study the
-very well commented example in the main() of gneural_network.c.
+The goal of the gneuralnetwork project is to produce an implementation of neural networks that meets the following
+criteria:
 
-Please, do not hesitate to contact me at jeanmichel.sellier@gmail.com
-if you have any question. I will be more than happy to answer your questions.
+   1.  Compiles to efficient machine code. (with parallel processing enabled, via OMP and/or CUDA).  We will not
+       be using languages that require an intepreter or a virtual machine.
 
+   2.  Allows heterogenous networks in which different nodes (or different layers) can have different activation
+       functions.
+
+   3.  Allows networks of any structure, with or without layers, feedforward or recurrent, shallow or very deep.
+
+   4.  Implements training of networks by many different methods.
+
+   5.  Implements derivation of network structure via evolutionary algorithms and/or cascade correlation learning.
+
+   6.  Supports very large neural networks.
+
+   7.  Has a Free or Open Source license so anybody can use it, fork it, or contribute to it.
+
+   8.  Supports a domain-specific programming language for specifying neural networks.
+
+   9.  Supports programming and command-line interfaces so that networks can be also controlled or configured from shell
+       or from programs written in other languages.
+
+  10.  Is well documented so people can figure out how to use it.
+
+  11.  Has support routines including a wide variety of ways to get data (text, graphics, numbers, etc) into and
+       out of neural networks - to encode them as inputs or decode them as outputs.
+
+Gneuralnetwork is currently under development and meets very few of these goals.  It is not at this time suitable for
+any projects other than continued development of gneuralnetwork.  Contributions are welcome.
+
+This project is hosted at https://savannah.gnu.org/projects/gneuralnetwork.  You can review the bug list and task lists
+there.  If you've looked at our list and don't see any evidence that we're aware of a bug or task that is something you
+think is an important issue, or if you're a developer and would like to contribute, please contact Jean-Michel Sellier
+(jeanmichel.sellier@gmail.com) or Ray Dillinger (bear@sonic.net).  We will be happy to answer your questions.
+
+This documentation page most recently updated 19 September 2016 by Ray Dillinger.
