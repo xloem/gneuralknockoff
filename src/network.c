@@ -386,14 +386,15 @@ network_config *network_config_alloc_default()
 // The advantages of the newnet format are: First, it permits bias weights.  Second, it does not depend on a layered
 //  structure. It allows backward connections so it can be used for recurrent networks and it allows self connections,
 //  so it can be used for Boltzmann networks or LSTM's. In general it permits recurrent and topologically varied
-//  networks. Third, neither the number of nodes nor the number of connections is limited.
+//  networks. Third, neither the number of nodes nor the number of connections is limited.  Fourth, it allows transfer
+//  functions of arbitrary width (producing and consuming more than one node, so multi-argument and/or multi-output
+//  functions can be used).  Other than bias weights (initialized to zero) converted networks do not have these
+//  features.
 
 struct newnet *convertnetwork(struct _network *oldnet){
     struct newnet *newval;    unsigned int layercount, neuroncount, connectioncount, nodenum;
     unsigned int synapsecount = 0;
-    if (oldnet == NULL) return (NULL); // nothing to do
-    newval = (struct newnet *)malloc(sizeof(struct newnet));
-    if (newval == NULL) return (NULL); // unable to allocate
+    if (oldnet == NULL || NULL == (newval = (struct newnet *)calloc(1, sizeof(struct newnet)))) return (NULL); // unable to allocate
     newval->nodecount = oldnet->num_of_neurons + 1; // add one to get space for reserved zero node.
     newval->inputcount = oldnet->layers[0].num_of_neurons;  // old structure assumed that all of layer zero is input.
     newval->outputcount = oldnet->layers[oldnet->num_of_layers - 1].num_of_neurons; // old structure assumed that all of last layer is output.
@@ -426,9 +427,10 @@ struct newnet *convertnetwork(struct _network *oldnet){
     }
     // Traversal of old network gave us connections in sequence by destination; new format needs them in sequence by origin. so we sort.
     double wtmp; unsigned int srctmp; unsigned int desttmp; unsigned int skipsize; unsigned int i1; unsigned int i2;
-    for (skipsize = (4 * --synapsecount) / 5; skipsize >= 1; skipsize = (4 * skipsize) / 5)
-	for (connectioncount = 0; connectioncount + skipsize < synapsecount; connectioncount++){
-	    i1 = connectioncount; i2 = connectioncount + skipsize;
+    for (skipsize = (2 * --synapsecount) / 3; skipsize >= 1; skipsize = (2 * skipsize) / 3)
+	for (connectioncount = 0; connectioncount < synapsecount; connectioncount++){
+	    i1 = MIN (connectioncount, (connectioncount + skipsize) % synapsecount);
+	    i2 = MAX (connectioncount, (connectioncount + skipsize) % synapsecount);
 	    if (newval->sources[i1] > newval->sources[i2] || (newval->sources[i1] == newval->sources[i2] && newval->dests[i1] > newval->dests[i2])){
 		wtmp = newval->weights[i1];    newval->weights[i1] = newval->weights[i2];   newval->weights[i2] = wtmp;
 		srctmp = newval->sources[i1];  newval->sources[i1] = newval->sources[i2];   newval->sources[i2] = srctmp;
