@@ -88,3 +88,152 @@ void feedforward(network *nn){
   }
  }
 }
+
+
+// input combining functions. Some widely used, some just plain strange.  Routine by Ray D. 6 September 2016
+double combine(const int combiner, const double currentval, const double ad){
+    switch(combiner){
+    case 0: return currentval + ad; // sigma - for "normal" networks.
+    case 1: return currentval * ad; // pi - useful for LSTM, etc.
+    case 2: return currentval + (ad / (1 + fabs(ad))); // softlimit - for ignoring outliers
+    case 3: return currentval + fabs(ad); // measures magnitude only.
+    case 4: return currentval + (ad > 0 ? log(ad + 1) : -log(fabs(ad)+1)); // softlog - for discounting outliers
+    case 5: return currentval > ad ? currentval : ad;  // max - for join layers
+    case 6: return ad > 0 ? currentval + ad : currentval; // ignore negative inputs
+    default: printf(stderr, "unknown combination function\n"); exit(1);
+    }
+}
+
+// return the identity element for the combiner - same numeric aliases for combiners as in the fn above. Routine by Ray
+// D. 6 September 2016
+inline double identity(const int combiner){ return (combiner == 1 ) ? 1.0 : 0.0; }
+
+// initialize an activation vector for use by a network. Routine by Ray D. 6 September 2016
+void init_activations(const struct newnet *const net, double *vec){
+#pragma omp parallel for
+    for (size_t pos = 0; pos < net->nodecount; pos++) vec[count] = identity(net->transfer[pos]);
+}
+
+// most of the popular transfer functions, and a few deliberate peculiarities, vectorized for OMP.
+// Routine by Ray D. 6 September 2016
+void transfer(int fchoice, double *ins, double *outs, size_t width){
+    switch(fchoice){
+    case 0:
+#pragma omp parallel for
+	for (size_t count = 0; count < width; count++)
+	    outs[count] = ins[count]; break; // identity
+    case 1:
+#pragma omp parallel for
+	for (size_t count = 0; count < width; count++)
+	    outs[count] = tanh(ins[count]); break;  // tanh sigmoid
+    case 2:
+#pragma omp parallel for
+	for (size_t count = 0; count < width; count++)
+	    outs[count] = atan(ins[count]); break; // arctangent sigmoid
+    case 3:
+#pragma omp parallel for
+	for (size_t count = 0; count < width; count++)
+	    outs[count] = 1.0 / (1.0 + exp(-ins[count])); break; // unsigned logistic sigmoid
+    case 4:
+#pragma omp parallel for
+	for (size_t count = 0; count < width; count++)
+	    outs[count] = (2.0 / (1.0 + exp(-ins[count]))) - 1.0; break; // signed logistic sigmoid
+    case 5:
+#pragma omp parallel for
+	for (size_t count = 0; count < width; count++)
+	    outs[count] = ins[count]/ (1.0 + fabs(ins[count])); break; // softsign sigmoid
+    case 6:
+#pragma omp parallel for
+	for (size_t count = 0; count < width; count++) // mirrored logarithmic transfer
+	    outs[count] = ins[count] > 0 ? log(fabs(ins[count]+1.0) : -log(fabs(-ins[count]-1.0); break;
+    case 7:
+#pragma omp parallel for
+	for (size_t count = 0; count < width; count++)
+	    outs[count] = ins[count] > 0 ? 1.0 : -1.0; break; // signed step function
+    case 8:
+#pragma omp parallel for
+	for (size_t count = 0; count < width; count++)
+	    outs[count] = ins[count] > 0.0 ? ins[count] : 0.0; break; // rectified linear unit
+    case 9:
+#pragma omp parallel for
+	for (size_t count = 0; count < width; count++)
+	    outs[count] = log(1.0 + exp(ins[count])); break; // softplus rectifier
+    case 10:
+#pragma omp parallel for
+	for (size_t count = 0; count < width; count++)   // logarithmic rectifier - mimics spike freq. in biological networks.
+	    outs[count] = ins[count] >= 1.0 ? log(ins[count]) : 0.0;
+    case 11:
+#pragma omp parallel for
+	for (size_t count = 0; count < width; count++) // sinusoid Radial Bias Function
+	    outs[count] = cos(ins[count]); break;
+    case 12:
+#pragma omp parallel for
+	for (size_t count = 0; count < width; count++)   // gaussian Radial Bias Function
+	    outs[count] = exp(-ins[count] * ins[count]); break;
+    case 13:
+#pragma omp parallel for
+	for (size_t count = 0; count < width; count++)   // thin plate spline Radial Bias Function
+	    outs[count] = (ins[count] * ins[count]) * ln (ins[count]); break;
+
+	// Note: Activation functions below this point operate on multiple nodes. This is an experimental capability.
+    case 14:
+#pragma omp parallel for
+	for (size_t count = 1; count < width; count++) // multiplication by first input.
+	    outs[count] = ins[count] * ins[0];
+	outs[0] = 0; break;
+    case 15:
+#pragma omp parallel for
+	for (size_t count = 0; count * 2 < width-1; count++){ // parallel pairwise addition & multiplication.
+	    outs[count * 2] = ins[count * 2] * ins[count * 2 + 1];
+	    outs[count * 2 + 1] = ins[count * 2] + ins[count * 2 + 1];
+	} break;
+    default: printf(stderr "unknown transfer function\n"); exit(1);
+    }
+}
+
+
+// fwdprop: The second argument is a pointer to a vector of inputs at least as long as the network's inputcount. The
+// third is a pointer to a vector of activation values at least as long as the network's nodecount. Reuse the activation
+// vector on subsequent calls for recurrent networks, otherwise be sure to initialize it to identity elements before the
+// call. The fourth argument is a pointer to a vector the same length as activation for recording the activation levels
+// at the time of firing. It's needed later for backprop, etc, but if you don't need it for training (ie, in production
+// or when training by other methods) you can leave it NULL. The last argument is a pointer to a vector of doubles at
+// least as long as net->outputcount, which will get filled with the network output.
+
+// Routine by Ray D, 31 Aug 2016.
+
+// Handles recurrent networks. Saves history if desired so we can later do backprop.  Handles combinators varying by
+// node.  Handles transfer functions varying by node.  Handles transfer functions of differing widths.
+
+void fwdprop(const struct newnet *const net, const double *const inputs, double *const activations,
+	     double *const history, double *const outputs){
+    size_t wcount = 0;    size_t nodecount = 0;
+    double *res = history != NULL ? history : alloca (sizeof(double) * net->nodecount);
+    res[nodecount++] = 1.0; // bias.
+#pragma omp parallel for
+    for (size_t incount = nodecount; incount <= net->inputcount; incount++)     // process inputs.
+	activations[incount] = combine(net->accum[incount],activations[incount], inputs[incount-1]);
+    for (wcount = 0; wcount < net->synapsecount; wcount++){     // process connections.
+	// perform transfer function for all nodes up to and including that required by current connection.
+	for (; nodecount <= net->sources[wcount]; nodecount+= net->transferwidths[nodecount]){
+	    transfer(net->transfer[nodecount], &(activations[nodecount], &(res[nodecount]), net->transferwidths[nodecount]));
+	    // reset nodes whose transfers have run so recurrent transfers start from the identity element for their accumulator.
+#pragma omp parallel for
+	    for (size_t resetcount = nodecount; resetcount <= nodecount + net->transferwidths[nodecount]; resetcount++){
+		// capture activation history if history vector is provided. many training methods need it.
+		activations[resetcount] = identity(net->accum[resetcount]);
+	    }
+	}
+	activations[net->dests[wcount]] =
+	    combine(net->accum[net->dests[wcount]],activations[net->dests[wcount]],res[net->sources[wcount]]*net->weights[wcount]);
+    }
+    // process transfer functions for any nodes following last weight source to be sure we get outputs for all output nodes.
+    for (; nodecount < net->nodecount; nodecount++){
+	transfer(net->nodecount, &(activations[nodecount], &(res[nodecount]), net->transferwidths[nodecount]));
+#pragma omp parallel for
+	for (size_t resetcount = nodecount; resetcount <= nodecount + net->transferwidths[nodecount]; resetcount++)
+	    activations[resetcount] = identity(net->accum[resetcount]);
+    }
+    memcpy(&(res[net->nodecount - net->outputcount-1], sizeof(double) * net->outputcount)); // send outputs to res
+}
+
