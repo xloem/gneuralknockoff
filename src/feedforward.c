@@ -48,7 +48,7 @@ void feedforward(network *nn){
    neuron *ne = &nn->layers[l].neurons[n];
 
    double x = 0.;
-   double a, tmp;
+   double tmp;
 
    /* fmv no more required */
    //for (i=0;i<NEURON[id].nw;i++) NEURON[id].x[i]=NEURON[NEURON[id].connection[i]].output;
@@ -100,7 +100,7 @@ double combine(const int combiner, const double currentval, const double ad){
     case 4: return currentval + (ad > 0 ? log(ad + 1) : -log(fabs(ad)+1)); // softlog - for discounting outliers
     case 5: return currentval > ad ? currentval : ad;  // max - for join layers
     case 6: return ad > 0 ? currentval + ad : currentval; // ignore negative inputs
-    default: printf(stderr, "unknown combination function\n"); exit(1);
+    default: fprintf(stderr, "unknown combination function\n"); exit(1);
     }
 }
 
@@ -111,7 +111,7 @@ inline double identity(const int combiner){ return (combiner == 1 ) ? 1.0 : 0.0;
 // initialize an activation vector for use by a network. Routine by Ray D. 6 September 2016
 void init_activations(const struct newnet *const net, double *vec){
 #pragma omp parallel for
-    for (size_t pos = 0; pos < net->nodecount; pos++) vec[count] = identity(net->transfer[pos]);
+    for (size_t pos = 0; pos < net->nodecount; pos++) vec[pos] = identity(net->transfer[pos]);
 }
 
 // most of the popular transfer functions, and a few deliberate peculiarities, vectorized for OMP.
@@ -145,7 +145,7 @@ void transfer(int fchoice, double *ins, double *outs, size_t width){
     case 6:
 #pragma omp parallel for
 	for (size_t count = 0; count < width; count++) // mirrored logarithmic transfer
-	    outs[count] = ins[count] > 0 ? log(fabs(ins[count]+1.0) : -log(fabs(-ins[count]-1.0); break;
+	    outs[count] = ins[count] > 0 ? log(fabs(ins[count]+1.0)) : -log(fabs(-ins[count]-1.0)); break;
     case 7:
 #pragma omp parallel for
 	for (size_t count = 0; count < width; count++)
@@ -173,7 +173,7 @@ void transfer(int fchoice, double *ins, double *outs, size_t width){
     case 13:
 #pragma omp parallel for
 	for (size_t count = 0; count < width; count++)   // thin plate spline Radial Bias Function
-	    outs[count] = (ins[count] * ins[count]) * ln (ins[count]); break;
+	    outs[count] = (ins[count] * ins[count]) * log (ins[count]); break;
 
 	// Note: Activation functions below this point operate on multiple nodes. This is an experimental capability.
     case 14:
@@ -183,11 +183,11 @@ void transfer(int fchoice, double *ins, double *outs, size_t width){
 	outs[0] = 0; break;
     case 15:
 #pragma omp parallel for
-	for (size_t count = 0; count * 2 < width-1; count++){ // parallel pairwise addition & multiplication.
-	    outs[count * 2] = ins[count * 2] * ins[count * 2 + 1];
-	    outs[count * 2 + 1] = ins[count * 2] + ins[count * 2 + 1];
+	for (size_t count = 0; count < (width-1); count+= 2){ // parallel pairwise addition & multiplication.
+	    outs[count] = ins[count] * ins[count + 1];
+	    outs[count + 1] = ins[count] + ins[count + 1];
 	} break;
-    default: printf(stderr "unknown transfer function\n"); exit(1);
+    default: fprintf(stderr, "unknown transfer function\n"); exit(1);
     }
 }
 
@@ -216,7 +216,7 @@ void fwdprop(const struct newnet *const net, const double *const inputs, double 
     for (wcount = 0; wcount < net->synapsecount; wcount++){     // process connections.
 	// perform transfer function for all nodes up to and including that required by current connection.
 	for (; nodecount <= net->sources[wcount]; nodecount+= net->transferwidths[nodecount]){
-	    transfer(net->transfer[nodecount], &(activations[nodecount], &(res[nodecount]), net->transferwidths[nodecount]));
+	    transfer(net->transfer[nodecount], &(activations[nodecount]), &(res[nodecount]), net->transferwidths[nodecount]);
 	    // reset nodes whose transfers have run so recurrent transfers start from the identity element for their accumulator.
 #pragma omp parallel for
 	    for (size_t resetcount = nodecount; resetcount <= nodecount + net->transferwidths[nodecount]; resetcount++){
@@ -229,11 +229,11 @@ void fwdprop(const struct newnet *const net, const double *const inputs, double 
     }
     // process transfer functions for any nodes following last weight source to be sure we get outputs for all output nodes.
     for (; nodecount < net->nodecount; nodecount++){
-	transfer(net->nodecount, &(activations[nodecount], &(res[nodecount]), net->transferwidths[nodecount]));
+	transfer(net->nodecount, &(activations[nodecount]), &(res[nodecount]), net->transferwidths[nodecount]);
 #pragma omp parallel for
 	for (size_t resetcount = nodecount; resetcount <= nodecount + net->transferwidths[nodecount]; resetcount++)
 	    activations[resetcount] = identity(net->accum[resetcount]);
     }
-    memcpy(&(res[net->nodecount - net->outputcount-1], sizeof(double) * net->outputcount)); // send outputs to res
+    memcpy(&(res[0]), &(outputs[net->nodecount - net->outputcount-1]), sizeof(double) * net->outputcount); // send outputs to res
 }
 
