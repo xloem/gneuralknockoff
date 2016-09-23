@@ -63,8 +63,8 @@ void network_load(network *nn, network_config *config) {
   ret = fscanf(fp, "%lf\n", &tmp); // activation function
   ne->activation = (int)(tmp);
 
-  ret=fscanf(fp,"%lf\n",&tmp); // discriminant function
-  ne->discriminant = (int)(tmp);
+  ret=fscanf(fp,"%lf\n",&tmp); // accumulator function
+  ne->accumulator = (int)(tmp);
  }
 
  // saves the network topology
@@ -103,7 +103,7 @@ void network_load(network *nn, network_config *config) {
      printf("NEURON[%d].connection[%d] = %d\n",
 	 i, j, ne->connection[j]->global_id); // connections to other neurons
    printf("NEURON[%d].activation = %d\n", i, ne->activation); // activation function
-   printf("NEURON[%d].discriminant = %d\n", i, ne->discriminant); // discriminant function
+   printf("NEURON[%d].accumulator = %d\n", i, ne->accumulator); // accumulator function
    printf("=======\n");
   }
   // network topology

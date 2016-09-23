@@ -23,22 +23,17 @@
 // =================================================================
 // File Name        : gneural_network.c
 // Version          : release 0.9.1
-// Creation         : 11 Nov. 2012, Cassibile (SR), Italy
-// Last Revision    : 03 May  2016, Cassibile (SR), Italy
+// Creation         : 11 Nov. 2012, Cassibile (SR), Italy, Jean-Michel Sellier
+// Last Revision    : 22 Sep  2016, San Mateo CA USA, Ray Dillinger
 // =================================================================
 
 /*
 
-   Programmable Neural Network. Every neuron consists of
-   n-inputs and only one output. The activation
-   and discriminant functions are defined by the user (see below).
-   Every network is made of layers which forward propagate
-   information from left to right. Every layer can have
-   an arbitrary amount of neurons which are connected
-   with each other.
+   Programmable Neural Network. Every neuron consists of n-inputs and only one output. The activation and accumulator
+   functions are defined by the user (see below).  Every network is made of layers which forward propagate information
+   from left to right. Every layer can have an arbitrary amount of neurons which are connected with each other.
 
-   Every neuron has a global ID number and a local ID number
-   (inside the layer). This simplifies the description of
+   Every neuron has a global ID number and a local ID number (inside the layer). This simplifies the description of
    connections in a network.
 
 */

@@ -6,6 +6,8 @@
    <jeanmichel.sellier@gmail.com>
    Copyright (C) 2016 Francesco Maria Virlinzi
    <francesco.virlinzi@gmail.com>
+   Copyright (C) 2016 Ray Dillinger
+   <bear@sonic.net>
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -41,11 +43,11 @@ enum main_token_id {
   _ERROR_TYPE,
   _INITIAL_WEIGHTS_RANDOMIZATION,
 
-  _NUMBER_OF_TRAINING_POINTS,
-  _TRAINING_POINT,
+  _NUMBER_OF_TRAINING_CASES,
+  _TRAINING_CASE,
   _TRAINING_METHOD,
 
-  _NUMBER_OF_INPUT_POINTS,
+  _NUMBER_OF_INPUT_CASES,
   _NETWORK_INPUT,
 
   _SAVE_OUTPUT,
@@ -64,10 +66,10 @@ static const char *main_token_n[] = {
   [_SAVE_NEURAL_NETWORK]		= "SAVE_NEURAL_NETWORK",
   [_ERROR_TYPE]				= "ERROR_TYPE",
   [_INITIAL_WEIGHTS_RANDOMIZATION]	= "INITIAL_WEIGHTS_RANDOMIZATION",
-  [_NUMBER_OF_TRAINING_POINTS]		= "NUMBER_OF_TRAINING_POINTS",
-  [_TRAINING_POINT]			= "TRAINING_POINT",
+  [_NUMBER_OF_TRAINING_CASES]		= "NUMBER_OF_TRAINING_CASES",
+  [_TRAINING_CASE]			= "TRAINING_CASE",
   [_TRAINING_METHOD]			= "TRAINING_METHOD",
-  [_NUMBER_OF_INPUT_POINTS]		= "NUMBER_OF_INPUT_POINTS",
+  [_NUMBER_OF_INPUT_CASES]		= "NUMBER_OF_INPUT_CASES",
   [_NETWORK_INPUT]			= "NETWORK_INPUT",
   [_SAVE_OUTPUT]			= "SAVE_OUTPUT",
   [_OUTPUT_FILE_NAME]			= "OUTPUT_FILE_NAME",
@@ -84,8 +86,8 @@ static const char *direction_n[] = {
 };
 
 static const char *error_names[] = {
-  [L2]	= "L2",
-  [L1]	= "L1",
+    [MSE] = "MSE",
+    [ME] = "ME",
 };
 
 static int find_id(char *name, const char *type, const char **array, int last)
@@ -172,17 +174,17 @@ static void sub_neuron_parser(network *nn, network_config *config, FILE *fp)
   enum neuron_sub_token_id {
 	NUMBER_OF_CONNECTIONS,
 	ACTIVATION,
-	DISCRIMINANT,
+	ACCUMULATOR,
 	CONNECTION,
   };
   static const char *neuron_sub_token_n[] = {
 	[NUMBER_OF_CONNECTIONS] = "NUMBER_OF_CONNECTIONS",
 	[ACTIVATION]		= "ACTIVATION",
-	[DISCRIMINANT]		= "DISCRIMINANT",
+	[ACCUMULATOR]		= "ACCUMULATOR",
 	[CONNECTION]		= "CONNECTION",
   };
 
-  static const char *discriminant_names[] = {
+  static const char *accumulator_names[] = {
 	[LINEAR]		= "LINEAR",
 	[LEGENDRE]		= "LEGENDRE",
 	[LAGUERRE]		= "LAGUERRE",
@@ -231,12 +233,12 @@ static void sub_neuron_parser(network *nn, network_config *config, FILE *fp)
 	printf("NEURON %d ACTIVATION = %s\n", index, activation_names[activ]);
 	}
 	break;
-  case DISCRIMINANT: {
+  case ACCUMULATOR: {
 	ret = fscanf(fp, "%s", s);
-	int discr = find_id(s,  neuron_sub_token_n[sub_token],
-		discriminant_names, array_size(discriminant_names));
-	nn->neurons[index].discriminant = discr;
-	printf("NEURON %d DISCRIMINANT = %s\n", index, discriminant_names[discr]);
+	int accum = find_id(s,  neuron_sub_token_n[sub_token],
+		accumulator_names, array_size(accumulator_names));
+	nn->neurons[index].accumulator = accum;
+	printf("NEURON %d ACCUMULATOR = %s\n", index, accumulator_names[accum]);
 	};
 	break;
   case CONNECTION: {
@@ -531,22 +533,22 @@ processing the input file\n\
 	sub_network_parser(nn, config, fp);
 	break;
 
-  case _NUMBER_OF_TRAINING_POINTS: {
-	int npoint = get_strictly_positive_number(fp, main_token_n[token_id]);
-	if (npoint > MAX_TRAINING_POINTS) {
-		printf("NUMBER_OF_TRAINING_POINTS is too large!\n");
-		printf("please increase MAX_TRAINING_POINTS and recompile!\n");
+  case _NUMBER_OF_TRAINING_CASES: {
+	int ncase = get_strictly_positive_number(fp, main_token_n[token_id]);
+	if (ncase > MAX_TRAINING_CASES) {
+		printf("NUMBER_OF_TRAINING_CASES is too large!\n");
+		printf("please increase MAX_TRAINING_CASES and recompile!\n");
 		exit(-1);
 		}
-	printf("NUMBER_OF_TRAINING_POINTS = %d [OK]\n", npoint);
-	config->num_points = npoint;
+	printf("NUMBER_OF_TRAINING_CASES = %d [OK]\n", ncase);
+	config->num_cases = ncase;
 	}
 	break;
 
-  // specify the training points for supervised learning
-  // syntax: TRAINING_POINT IN point_index neuron_index _connection_index value
-  // syntax: TRAINING_POINT OUT point_index neuron_index value
-  case _TRAINING_POINT: {
+  // specify the training cases for supervised learning
+  // syntax: TRAINING_CASE IN case_index neuron_index _connection_index value
+  // syntax: TRAINING_CASE OUT case_index neuron_index value
+  case _TRAINING_CASE: {
 	ret = fscanf(fp, "%s", s);
 	int direction = find_id(s, main_token_n[token_id],
 		direction_n, array_size(direction_n));
@@ -554,42 +556,42 @@ processing the input file\n\
 	case _IN: {
 		int ind = get_positive_number(fp, "training data index");
 
-		if (ind > (config->num_points -1)) {
+		if (ind > (config->num_cases -1)) {
 			printf("training data index out of range!\n");
 			exit(-1);
 			}
-		int neu = get_positive_number(fp, "TRAINING_POINT neuron index");
+		int neu = get_positive_number(fp, "TRAINING_CASE neuron index");
 
 		if (neu > (nn->num_of_neurons -1)) {
-			printf("TRAINING_POINT IN neuron index out of range!\n");
+			printf("TRAINING_CASE IN neuron index out of range!\n");
 			exit(-1);
 			}
 
-		int conn = get_positive_number(fp, "TRAINING_POINT connection index");
+		int conn = get_positive_number(fp, "TRAINING_CASE connection index");
 		if (conn > (nn->neurons[neu].num_input -1)) {
-			printf("TRAINING_POINT connection index out of range!\n");
+			printf("TRAINING_CASE connection index out of range!\n");
 			exit(-1);
 		}
 		tmp = get_double_number(fp);
-		printf("TRAINING_POINT IN %d %d %d %f [OK]\n",
+		printf("TRAINING_CASE IN %d %d %d %f [OK]\n",
 			ind, neu, conn, tmp);
-		config->points_x[ind][neu][conn] = tmp;
+		config->cases_x[ind][neu][conn] = tmp;
 		};
 		break;
 	case _OUT: {
 		int ind = get_positive_number(fp, "training data index");
-		if (ind > (config->num_points -1)) {
+		if (ind > (config->num_cases -1)) {
 			printf("training data index out of range!\n");
 			exit(-1);
 			}
-		int neu = get_positive_number(fp, "TRAINING_POINT OUT neuron index");
+		int neu = get_positive_number(fp, "TRAINING_CASE OUT neuron index");
 		if (neu > (nn->num_of_neurons -1)) {
-			printf("TRAINING_POINT OUT neuron index out of range!\n");
+			printf("TRAINING_CASE OUT neuron index out of range!\n");
 			exit(-1);
 			}
 		tmp = get_double_number(fp);
-		printf("TRAINING_POINT OUT %d %d %f [OK]\n", ind, neu, tmp);
-		config->points_y[ind][neu] = tmp;
+		printf("TRAINING_CASE OUT %d %d %f [OK]\n", ind, neu, tmp);
+		config->cases_y[ind][neu] = tmp;
 		}
 	} /* close switch (direction) */
 	};
@@ -625,25 +627,25 @@ processing the input file\n\
 	strcpy(config->output_file_name, s);
         printf("OUTPUT FILE NAME = %s [OK]\n", config->output_file_name);
         break;
-  // specify the number of points for the output file
-  // syntax: NUMBER_OF_INPUT_POINTS num
-  case _NUMBER_OF_INPUT_POINTS: {
-	int num = get_strictly_positive_number(fp, "NUMBER_OF_INPUT_POINTS");
-	if (num > MAX_NUM_POINTS) {
-		printf("NUMBER_OF_INPUT_POINTS is too large!\n");
-		printf("please increase MAX_NUM_POINTS and recompile!\n");
+  // specify the number of cases for the output file
+  // syntax: NUMBER_OF_INPUT_CASES num
+  case _NUMBER_OF_INPUT_CASES: {
+	int num = get_strictly_positive_number(fp, "NUMBER_OF_INPUT_CASES");
+	if (num > MAX_NUM_CASES) {
+		printf("NUMBER_OF_INPUT_CASES is too large!\n");
+		printf("please increase MAX_NUM_CASES and recompile!\n");
 		exit(-1);
 		}
-	printf("NUMBER OF INPUT POINTS = %d [OK]\n", num);
-	config->num_of_points = num;
+	printf("NUMBER OF INPUT CASES = %d [OK]\n", num);
+	config->num_of_cases = num;
 	};
         break;
-  // specify the input points for the output file
-  // syntax: NETWORK_INPUT point_id neuron_id conn_id val
+  // specify the input cases for the output file
+  // syntax: NETWORK_INPUT case_id neuron_id conn_id val
   case _NETWORK_INPUT: {
-	int num = get_positive_number(fp, "NETWORK_INPUT point index");
-	if (num > (config->num_of_points - 1)) {
-		printf("NETWORK_INPUT point index out of range!\n");
+	int num = get_positive_number(fp, "NETWORK_INPUT case index");
+	if (num > (config->num_of_cases - 1)) {
+		printf("NETWORK_INPUT case index out of range!\n");
 		exit(-1);
 		}
 
@@ -658,7 +660,7 @@ processing the input file\n\
 		exit(-1);
 		}
 	double val = get_double_number(fp);
-	printf("NETWORK INPUT POINT #%d %d %d = %g [OK]\n",
+	printf("NETWORK INPUT CASE #%d %d %d = %g [OK]\n",
 		num, neu, conn, val);
 	config->output_x[num][neu][conn]=val;
 	};
@@ -696,7 +698,7 @@ processing the input file\n\
 	};
 	break;
   // specify the error function for the training process
-  // syntax: ERROR_TYPE L2/L1
+  // syntax: ERROR_TYPE MSE/ME
   case _ERROR_TYPE: {
 	ret = fscanf(fp, "%s", s);
 	int errtype = find_id(s, main_token_n[token_id],

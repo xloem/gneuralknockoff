@@ -28,8 +28,8 @@
 // returns the size (in particular, the number of elements) of an array
 #define array_size(foo) (sizeof(foo)/sizeof(foo[0]))
 
-// maximum number of training point
-#define MAX_TRAINING_POINTS 8
+// maximum number of training cases
+#define MAX_TRAINING_CASES 8
 
 // maximum allowed number of input connections per neuron
 #define MAX_IN 16
@@ -40,8 +40,8 @@
 // maximum number of layers
 #define MAX_NUM_LAYERS 16
 
-// maximum number of points in output file
-#define MAX_NUM_POINTS 64
+// maximum number of cases in output file
+#define MAX_NUM_CASES 64
 
 // low limit for the genetic algorithm
 #define PAR_QSORT_LOW_LIMIT 1024
@@ -65,8 +65,8 @@ enum activation_function {
 	POL2,
 };
 
-// discriminant functions
-enum discriminant_function {
+// accumulators
+enum accumulator_function {
 	LINEAR,
 	LEGENDRE,
 	LAGUERRE,
@@ -75,8 +75,8 @@ enum discriminant_function {
 
 // error/cost/target functions
 enum error_function {
-	L2,
-	L1,
+	MSE,
+	ME,
 };
 
 // optimization methods

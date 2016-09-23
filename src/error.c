@@ -33,55 +33,55 @@ double error(network *nn, network_config *config){
  err = 0.;
 
  switch (config->error_type) {
- // L1 norm
- case L1:
+ // Mean Error
+ case ME:
    err = -1.e8;
-   for (n = 0; n < config->num_points; n++) {
+   for (n = 0; n < config->num_cases; n++) {
     int i, j;
     // assign training input
     for (i = 0; i < nn->layers[0].num_of_neurons; i++) {
      neuron *ne = &nn->layers[0].neurons[i];
 #if 1
-     ne->output = config->points_x[n][ne->global_id][0];
+     ne->output = config->cases_x[n][ne->global_id][0];
 #else
      for (j = 0; j < ne->num_input; j++)
-      ne->output = config->points_x[n][i][j];
+      ne->output = config->cases_x[n][i][j];
 #endif
     }
     feedforward(nn);
-    // compute the L1 error comparing with training output
+    // compute the mean error comparing with training output
     double tmp = 0.;
     for (j = 0; j < nn->layers[nn->num_of_layers-1].num_of_neurons; j++){
      neuron *ne = &nn->layers[nn->num_of_layers-1].neurons[j];
      y = ne->output;
-     tmp += fabs(y-config->points_y[n][ne->global_id]);
+     tmp += fabs(y-config->cases_y[n][ne->global_id]);
     }
     err += tmp;
    }
    return err;
 
    break;
-  // L2 norm
-  case L2:
-   for (n = 0; n < config->num_points; n++){
+  // Mean Squared Error
+  case MSE:
+   for (n = 0; n < config->num_cases; n++){
     int i, j;
     // assign training input
     for (i = 0; i < nn->layers[0].num_of_neurons; i++){
      neuron *ne = &nn->layers[0].neurons[i];
 #if 1
-     ne->output = config->points_x[n][ne->global_id][0];
+     ne->output = config->cases_x[n][ne->global_id][0];
 #else
      for (j = 0; j < ne->num_input; j++)
-      ne->output = config->points_x[n][i][j];
+      ne->output = config->cases_x[n][i][j];
 #endif
     }
     feedforward(nn);
-    // compute the L2 error comparing with the training output
+    // compute the squared error comparing with the training output
     double tmp = 0.;
     for (j = 0; j < nn->layers[nn->num_of_layers-1].num_of_neurons; j++){
      neuron *ne = &nn->layers[nn->num_of_layers-1].neurons[j];
      y = ne->output;;
-     tmp += pow(y - config->points_y[n][ne->global_id], 2);
+     tmp += pow(y - config->cases_y[n][ne->global_id], 2);
     }
     err += tmp;
    }

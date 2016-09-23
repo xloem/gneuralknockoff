@@ -25,21 +25,16 @@
 // =================================================================
 // File Name        : network.c
 // Version          : release 0.9.0
-// Creation         : 18 Apr. 2016, Catania (CT), Italy
-// Last Revision    : 18 Apr. 2016, Catania (CT), Italy
+// Creation         : 18 Apr. 2016, Catania Italy, Jean-Michel Sellier
+// Last Revision    : 22 Sep. 2016, San Mateo CA USA, Ray Dillinger
 // =================================================================
 
 /*
-   Programmable Neural Network. Every neuron consists of
-   n-inputs and only one output. The activation
-   and discriminant functions are defined by the user (see below).
-   Every network is made of layers which forward propagate
-   information from left to right. Every layer can have
-   an arbitrary amount of neurons which are connected
-   with each other.
+   Programmable Neural Network. Every neuron consists of n-inputs and only one output. The activation and accumulator
+   functions are defined by the user (see below).  Every network is made of layers which forward propagate information
+   from left to right. Every layer can have an arbitrary amount of neurons which are connected with each other.
 
-   Every neuron has a global ID number and a local ID number
-   (inside the layer). This simplifies the description of
+   Every neuron has a global ID number and a local ID number (inside the layer). This simplifies the description of
    connections in a network.
 
 */
@@ -358,7 +353,7 @@ void network_config_set_default(network_config *config)
   config->load_neural_network = OFF;
   config->save_neural_network = OFF;
   config->initial_weights_randomization = ON;
-  config->error_type = L2;
+  config->error_type = MSE;
 }
 
 network_config *network_config_alloc_default()
@@ -374,7 +369,7 @@ network_config *network_config_alloc_default()
 
 // produce a new-format network given an old-format network.  -- added by Ray D. 29 Aug 2016. The 'newnet' format has a
 //  single population of nodes (neurons) and a single sequence of connections (synapses).  The accumulation and transfer
-//  functions (discriminant and activation function from the old network) are called the first time in the sequence that
+//  functions (accumulator and activation function from the old network) are called the first time in the sequence that
 //  the node is used as the source for any synapse. They are user definable on a per-node basis, as they are in the old
 //  network format.  Each node and connection has a global ID - which is the array index at which which its information
 //  is recorded. In the case of synapses the global ID is also the synapse's number in the sequence of synapse
@@ -403,7 +398,7 @@ struct newnet *convertnetwork(struct _network *oldnet){
     newval->sources = (unsigned int *)malloc(newval->synapsecount * sizeof(unsigned int));
     newval->dests = (unsigned int *)malloc(newval->synapsecount  * sizeof(unsigned int));
     newval->transfer = (enum activation_function *)malloc(sizeof(enum activation_function) * newval->nodecount);
-    newval->accum = (enum discriminant_function *)malloc(sizeof(enum discriminant_function) * newval->nodecount);
+    newval->accum = (enum accumulator_function *)malloc(sizeof(enum accumulator_function) * newval->nodecount);
     if (newval->weights == NULL || newval->sources == NULL || newval->dests == NULL || newval->transfer == NULL || newval->accum == NULL){  // if unable to allocate
 	free(newval->weights); free(newval->sources); free(newval->weights); free(newval->transfer); free(newval->accum); free(newval); return (NULL);
     }
@@ -411,7 +406,7 @@ struct newnet *convertnetwork(struct _network *oldnet){
 	for (neuroncount = 0; neuroncount < oldnet->layers[layercount].num_of_neurons; neuroncount++){
 	    nodenum = oldnet->layers[layercount].neurons[neuroncount].global_id + 1;  // adding one to make room for zero node
 	    newval->transfer[nodenum] = oldnet->layers[layercount].neurons[neuroncount].activation;
-	    newval->accum[nodenum] = oldnet->layers[layercount].neurons[neuroncount].discriminant;
+	    newval->accum[nodenum] = oldnet->layers[layercount].neurons[neuroncount].accumulator;
 	    newval->dests[synapsecount] = nodenum; 	    // add dest/source/weight for bias connection
 	    newval->sources[synapsecount] = 0;              // (old network format lacks bias connections)
 	    newval->weights[synapsecount++] = 0.0;          // initial bias weight is zero

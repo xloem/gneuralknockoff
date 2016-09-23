@@ -2,7 +2,7 @@
 # authors       : Jean Michel Sellier
 #                 Carl Mueller
 # created       : 28 Mar. 2016, Cassibile (SR), Italy
-# last modified : 08 Apr. 2016
+# last modified : 22 Sep. 2016, San Mateo CA, USA
 # purpose       : A neural network is trained to
 #                 compute the modulus (or squared
 #                 magnitude) of two-dimensional
@@ -31,14 +31,14 @@ NEURON 4 ACTIVATION TANH
 NEURON 5 ACTIVATION TANH
 NEURON 6 ACTIVATION TANH
 
-# define the discriminant function for every neuron
-# neurons #0 and #1 do not need any discriminant as
-# they are identity functions
-NEURON 2 DISCRIMINANT LINEAR
-NEURON 3 DISCRIMINANT LINEAR
-NEURON 4 DISCRIMINANT LINEAR
-NEURON 5 DISCRIMINANT LINEAR
-NEURON 6 DISCRIMINANT LINEAR
+# define the accumulator function for every neuron
+# neurons #0 and #1 do not need any accumulator as
+# they are input nodes.
+NEURON 2 ACCUMULATOR LINEAR
+NEURON 3 ACCUMULATOR LINEAR
+NEURON 4 ACCUMULATOR LINEAR
+NEURON 5 ACCUMULATOR LINEAR
+NEURON 6 ACCUMULATOR LINEAR
 
 # total number of layers for the network
 NETWORK NUMBER_OF_LAYERS 3
@@ -87,22 +87,22 @@ NEURON 6 CONNECTION 3 5
 
 # total number of training data
 # for supervised learning
-NUMBER_OF_TRAINING_POINTS 3
+NUMBER_OF_TRAINING_CASES 3
 
 # training data - input
-# syntax: TRAINING_POINT IN point_index neuron_index connection_index value
-TRAINING_POINT IN 0 0 0 0.15
-TRAINING_POINT IN 0 1 0 0.15
-TRAINING_POINT IN 1 0 0 0.60
-TRAINING_POINT IN 1 1 0 0.60
-TRAINING_POINT IN 2 0 0 0.80
-TRAINING_POINT IN 2 1 0 0.80
+# syntax: TRAINING_CASE IN case_index neuron_index connection_index value
+TRAINING_CASE IN 0 0 0 0.15
+TRAINING_CASE IN 0 1 0 0.15
+TRAINING_CASE IN 1 0 0 0.60
+TRAINING_CASE IN 1 1 0 0.60
+TRAINING_CASE IN 2 0 0 0.80
+TRAINING_CASE IN 2 1 0 0.80
 
 # training data - output
-# syntax: TRAINING_POINT OUT point_index neuron_index value
-TRAINING_POINT OUT 0 6 0.045
-TRAINING_POINT OUT 1 6 0.72
-TRAINING_POINT OUT 2 6 1.28
+# syntax: TRAINING_CASE OUT case_index neuron_index value
+TRAINING_CASE OUT 0 6 0.045
+TRAINING_CASE OUT 1 6 0.72
+TRAINING_CASE OUT 2 6 1.28
 
 # initial randomization of weights = ON/OFF
 INITIAL_WEIGHTS_RANDOMIZATION ON
@@ -112,7 +112,7 @@ WEIGHT_MINIMUM -2.5
 WEIGHT_MAXIMUM +2.5
 
 # specify the error function for the training process
-ERROR_TYPE L2
+ERROR_TYPE MSE
 
 # optimization method for the training process
 # general syntax: TRAINING_METHOD method values
@@ -132,8 +132,8 @@ TRAINING_METHOD SIMULATED_ANNEALING ON 25 25000 1.e-4 8.0 1.e-2
 # and neuron #(NUMBER_OF_NEURONS-1) is the output
 SAVE_OUTPUT ON
 OUTPUT_FILE_NAME final_results.dat
-NUMBER_OF_INPUT_POINTS 21
-# syntax: INPUT_POINT point_index neuron_index connection_index value
+NUMBER_OF_INPUT_CASES 21
+# syntax: INPUT_CASE case_index neuron_index connection_index value
 NETWORK_INPUT 0 0 0 0.0
 NETWORK_INPUT 0 1 0 0.0
 NETWORK_INPUT 1 0 0 0.05

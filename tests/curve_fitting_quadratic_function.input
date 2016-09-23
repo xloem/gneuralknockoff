@@ -33,13 +33,13 @@ NEURON 3 ACTIVATION TANH
 NEURON 4 ACTIVATION TANH
 NEURON 5 ACTIVATION TANH
 
-# define the discriminant function for every neuron
-# neuron #0 does not need any discriminant as it is the identity function
-NEURON 1 DISCRIMINANT LINEAR
-NEURON 2 DISCRIMINANT LINEAR
-NEURON 3 DISCRIMINANT LINEAR
-NEURON 4 DISCRIMINANT LINEAR
-NEURON 5 DISCRIMINANT LINEAR
+# define accumulator functions for every neuron
+# neuron #0 does not need any accumulator; it is the input node.
+NEURON 1 ACCUMULATOR LINEAR
+NEURON 2 ACCUMULATOR LINEAR
+NEURON 3 ACCUMULATOR LINEAR
+NEURON 4 ACCUMULATOR LINEAR
+NEURON 5 ACCUMULATOR LINEAR
 
 # total number of layers for the network
 NETWORK NUMBER_OF_LAYERS 3
@@ -83,19 +83,19 @@ NEURON 5 CONNECTION 3 4
 
 # total number of training data
 # for supervised learning
-NUMBER_OF_TRAINING_POINTS 3
+NUMBER_OF_TRAINING_CASES 3
 
 # training data - input
-# syntax: TRAINING_POINT IN point_index neuron_index connection_index value
-TRAINING_POINT IN 0 0 0 0.15
-TRAINING_POINT IN 1 0 0 0.60
-TRAINING_POINT IN 2 0 0 0.80
+# syntax: TRAINING_CASE IN case_index neuron_index connection_index value
+TRAINING_CASE IN 0 0 0 0.15
+TRAINING_CASE IN 1 0 0 0.60
+TRAINING_CASE IN 2 0 0 0.80
 
 # training data - output
-# syntax: TRAINING_POINT OUT point_index neuron_index value
-TRAINING_POINT OUT 0 5 0.0225
-TRAINING_POINT OUT 1 5 0.36
-TRAINING_POINT OUT 2 5 0.64
+# syntax: TRAINING_CASE OUT case_index neuron_index value
+TRAINING_CASE OUT 0 5 0.0225
+TRAINING_CASE OUT 1 5 0.36
+TRAINING_CASE OUT 2 5 0.64
 
 # initial randomization of weights = ON/OFF
 INITIAL_WEIGHTS_RANDOMIZATION ON
@@ -105,7 +105,7 @@ WEIGHT_MINIMUM -2.5
 WEIGHT_MAXIMUM +2.5
 
 # specify the error function for the training process
-ERROR_TYPE L2
+ERROR_TYPE MSE
 
 # optimization method for the training process
 # general syntax: TRAINING_METHOD method values
@@ -150,8 +150,8 @@ TRAINING_METHOD SIMULATED_ANNEALING ON 25 25000 1.e-4 8.0 1.e-2
 # and neuron #(NUMBER_OF_NEURONS-1) is the output
 SAVE_OUTPUT ON
 OUTPUT_FILE_NAME final_results.dat
-NUMBER_OF_INPUT_POINTS 21
-# syntax: INPUT_POINT point_index neuron_index connection_index value
+NUMBER_OF_INPUT_CASES 21
+# syntax: INPUT_CASE case_index neuron_index connection_index value
 NETWORK_INPUT 0 0 0 0.0
 NETWORK_INPUT 1 0 0 0.05
 NETWORK_INPUT 2 0 0 0.10

@@ -69,7 +69,7 @@
         having to go through the source code.
         Plenty of options are now possible, for instance, the
         user can define the number of neurons, their connections,
-        their discriminant, activation functions, etc.
+        their accumulator, activation functions, etc.
         The user can choose among four different methods for
         training the neural network which can be saved for
         later use.

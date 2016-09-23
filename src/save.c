@@ -46,7 +46,7 @@ void network_save(network *nn, network_config *config) {
   for (j = 0; j < nn->neurons[i].num_input; j++)
     fprintf(fp,"%d\n", nn->neurons[i].connection[j]->global_id); // connections to other neurons
   fprintf(fp,"%d\n", nn->neurons[i].activation); // activation function
-  fprintf(fp,"%d\n", nn->neurons[i].discriminant); // discriminant function
+  fprintf(fp,"%d\n", nn->neurons[i].accumulator); // accumulator function
  }
 
  // saves the network topology
@@ -75,8 +75,8 @@ void network_save(network *nn, network_config *config) {
 	 i, j, nn->neurons[i].connection[j]->global_id); // connections to other neurons
    printf("NEURON[%d].activation = %d\n",
        i, nn->neurons[i].activation); // activation function
-   printf("NEURON[%d].discriminant = %d\n",
-       i, nn->neurons[i].discriminant); // discriminant function
+   printf("NEURON[%d].accumulator = %d\n",
+       i, nn->neurons[i].accumulator); // accumulator function
    printf("=======\n");
   }
   // network topology
@@ -103,7 +103,7 @@ void network_save_final_curve(network *nn, network_config *config)
 	exit(-1);
   }
 
-  for (n = 0; n < config->num_of_points; n++) {
+  for (n = 0; n < config->num_of_cases; n++) {
 	int i, j;
 	double y;
 	/* for each neuron in layers[0] i.e: the input layer */

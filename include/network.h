@@ -26,13 +26,13 @@
 #include "defines.h"
 
 typedef struct _neuron{
- unsigned int global_id;	/* a unique global id for each neuron */
- unsigned int num_input;	/* how many inputs the neuron has */
+    unsigned int global_id;	// a unique global id for each neuron
+    unsigned int num_input;	// how many inputs the neuron has
  // connection[i] is the identification number of the neuron which
  // output is connected to the i-th input branch of the neuron
- struct _neuron* *connection;	/* which neurons is connected */
+    struct _neuron* *connection;	// which neurons is connected
  enum activation_function activation;		// type of activation function
- enum discriminant_function discriminant;	// type of discriminant function
+ enum accumulator_function accumulator;         // type of accumulator function
 // double x[MAX_IN]; // n inputs FMV: no more required...
  double *w;		// n weights
  double output;		// one output
@@ -84,8 +84,8 @@ typedef struct _network_config {
   unsigned char save_output;
   char *output_file_name;
 
-  unsigned int num_of_points;
-  double output_x[MAX_NUM_POINTS][MAX_NUM_NEURONS][MAX_IN];
+  unsigned int num_of_cases;
+  double output_x[MAX_NUM_CASES][MAX_NUM_NEURONS][MAX_IN];
 
   double rate;
   int nmax, mmax;
@@ -98,9 +98,9 @@ typedef struct _network_config {
   double wmin, wmax;
 
   /* training fields */
-  unsigned int num_points;
-  double points_x[MAX_TRAINING_POINTS][MAX_NUM_NEURONS][MAX_IN];
-  double points_y[MAX_TRAINING_POINTS][MAX_NUM_NEURONS];
+  unsigned int num_cases;
+  double cases_x[MAX_TRAINING_CASES][MAX_NUM_NEURONS][MAX_IN];
+  double cases_y[MAX_TRAINING_CASES][MAX_NUM_NEURONS];
 } network_config;
 /*
  * network* API

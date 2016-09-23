@@ -51,7 +51,7 @@ void feedforward(network *nn){
 
    /* fmv no more required */
    //for (i=0;i<NEURON[id].nw;i++) NEURON[id].x[i]=NEURON[NEURON[id].connection[i]].output;
-   switch (ne->discriminant) {
+   switch (ne->accumulator) {
     case LINEAR:
      for (i = 0; i < ne->num_input; i++)
       x += ne->connection[i]->output * ne->w[i]; // linear product between w[] and x[]
