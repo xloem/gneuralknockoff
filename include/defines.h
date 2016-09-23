@@ -25,9 +25,6 @@
 #define MAX(x,  y)   (((x) > (y)) ? (x) : (y))
 #define MIN(x,  y)   (((x) < (y)) ? (x) : (y))
 
-// returns the size (in particular, the number of elements) of an array
-#define array_size(foo) (sizeof(foo)/sizeof(foo[0]))
-
 // maximum number of training cases
 #define MAX_TRAINING_CASES 8
 

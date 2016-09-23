@@ -74,6 +74,7 @@ static const char *main_token_n[] = {
   [_SAVE_OUTPUT]			= "SAVE_OUTPUT",
   [_OUTPUT_FILE_NAME]			= "OUTPUT_FILE_NAME",
 };
+const int main_token_count = 17;
 
 enum direction_enum {
   _IN,
@@ -84,11 +85,13 @@ static const char *direction_n[] = {
   [_IN]		= "IN",
   [_OUT]	= "OUT",
 };
+const int direction_count = 2;
 
 static const char *error_names[] = {
     [MSE] = "MSE",
     [ME] = "ME",
 };
+const int error_name_count = 2;
 
 static int find_id(char *name, const char *type, const char **array, int last)
 {
@@ -136,6 +139,7 @@ static const char *switch_n[] = {
   [OFF] = "OFF",
   [ON]  = "ON",
 };
+static const int switch_n_size = 2;
 
 static int get_switch_value(FILE *fp, const char *name)
 {
@@ -144,7 +148,7 @@ static int get_switch_value(FILE *fp, const char *name)
   ret = fscanf(fp, "%s", s);
   if (ret < 0)
     exit(-1);
-  return find_id(s, name, switch_n, array_size(switch_n));
+  return find_id(s, name, switch_n, switch_n_size);
 }
 
 static double get_double_number(FILE *fp)
@@ -203,6 +207,10 @@ static void sub_neuron_parser(network *nn, network_config *config, FILE *fp)
 	[POL2]			= "POL2",
   };
 
+  const int neuron_sub_token_count = 4;
+  const int accumulator_names_count = 4;
+  const int activation_names_count = 9;
+
   int sub_token, sub_num, index, ret;
   char s[128];
 
@@ -216,7 +224,7 @@ static void sub_neuron_parser(network *nn, network_config *config, FILE *fp)
   if (ret < 0)
     exit(-1);
   sub_token = find_id(s, "NEURON sub-token",
-	neuron_sub_token_n, array_size(neuron_sub_token_n));
+	neuron_sub_token_n, neuron_sub_token_count);
 
   switch (sub_token) {
   case NUMBER_OF_CONNECTIONS: {
@@ -228,7 +236,7 @@ static void sub_neuron_parser(network *nn, network_config *config, FILE *fp)
   case ACTIVATION: {
 	ret = fscanf(fp, "%s", s);
 	int activ = find_id(s, neuron_sub_token_n[sub_token],
-		activation_names, array_size(activation_names));
+		activation_names, activation_names_count);
 	nn->neurons[index].activation = activ;
 	printf("NEURON %d ACTIVATION = %s\n", index, activation_names[activ]);
 	}
@@ -236,7 +244,7 @@ static void sub_neuron_parser(network *nn, network_config *config, FILE *fp)
   case ACCUMULATOR: {
 	ret = fscanf(fp, "%s", s);
 	int accum = find_id(s,  neuron_sub_token_n[sub_token],
-		accumulator_names, array_size(accumulator_names));
+		accumulator_names, accumulator_names_count);
 	nn->neurons[index].accumulator = accum;
 	printf("NEURON %d ACCUMULATOR = %s\n", index, accumulator_names[accum]);
 	};
@@ -277,6 +285,7 @@ static void sub_network_parser(network *nn, network_config *config, FILE *fp) {
 	[LAYER]                 = "LAYER",
 	[ASSIGN_NEURON_TO_LAYER]= "ASSIGN_NEURON_TO_LAYER",
   };
+  const int network_sub_token_count = 3;
   int ret, sub_token;
   char s[128];
 
@@ -287,7 +296,7 @@ static void sub_network_parser(network *nn, network_config *config, FILE *fp) {
   if (ret < 0)
     exit(-1);
   sub_token = find_id(s, "NETWORK sub-token",
-	network_sub_token_n, array_size(network_sub_token_n));
+	network_sub_token_n, network_sub_token_count);
   switch (sub_token) {
   case NUMBER_OF_LAYERS: {
 	int num_layers = get_positive_number(fp, "NUMBER_OF_LAYERS");
@@ -360,6 +369,7 @@ static void sub_training_method_parser(network *nn, network_config *config, FILE
 	[GENETIC_ALGORITHM]     = "GENETIC_ALGORITHM",
 	[MSMCO]                 = "MSMCO",
   };
+  const int sub_method_token_count = 5;
 
   int ret, method_id;
   char s[128];
@@ -367,7 +377,7 @@ static void sub_training_method_parser(network *nn, network_config *config, FILE
   if (ret < 0)
     exit(-1);
 
-  method_id = find_id(s, "TRAINING_METHOD", sub_method_token_n, array_size(sub_method_token_n));
+  method_id = find_id(s, "TRAINING_METHOD", sub_method_token_n, sub_method_token_count);
   switch (method_id) {
   case SIMULATED_ANNEALING: {
 	// simulated annealing
@@ -510,7 +520,7 @@ processing the input file\n\
   if (ret < 0)
 	return;
 
-  token_id = find_id(s, "Token", main_token_n, array_size(main_token_n));
+  token_id = find_id(s, "Token", main_token_n, main_token_count);
 
   switch (token_id) {
 
@@ -551,7 +561,7 @@ processing the input file\n\
   case _TRAINING_CASE: {
 	ret = fscanf(fp, "%s", s);
 	int direction = find_id(s, main_token_n[token_id],
-		direction_n, array_size(direction_n));
+		direction_n, direction_count);
 	switch (direction) {
 	case _IN: {
 		int ind = get_positive_number(fp, "training data index");
@@ -702,7 +712,7 @@ processing the input file\n\
   case _ERROR_TYPE: {
 	ret = fscanf(fp, "%s", s);
 	int errtype = find_id(s, main_token_n[token_id],
-		error_names, array_size(error_names));
+		error_names, error_name_count);
 	config->error_type = errtype;
 	printf("ERROR_TYPE = %s [OK]\n", error_names[errtype]);
 	};
