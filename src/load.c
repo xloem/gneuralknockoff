@@ -20,9 +20,8 @@
 
 */
 
+#include "includes.h"
 #include "load.h"
-#include <stdio.h>
-#include <stdlib.h>
 
 void network_load(network *nn, network_config *config) {
  int output = config->verbosity;/* screen output - on/off */

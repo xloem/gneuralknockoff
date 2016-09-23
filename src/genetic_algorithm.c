@@ -27,13 +27,9 @@
 // initially implemented by : Jean Michel Sellier
 // drastically improved by  : Nan
 
-#include <genetic_algorithm.h>
-#include <error.h>
-#include <rnd.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <math.h>
-#include <string.h>
+#include "includes.h"
+#include "genetic_algorithm.h"
+#include "rnd.h"
 
 void memswap(void* a,void* b,size_t size){
  char t[size];

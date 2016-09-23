@@ -22,10 +22,8 @@
 
 // returns a number between 0. and 1.
 
+#include "includes.h"
 #include "rnd.h"
-
-#if 1
-#include <math.h>
 
 inline double rnd(void) {
  static int ISEED = 38467.;
@@ -34,21 +32,4 @@ inline double rnd(void) {
 
  return ISEED / 1048576.;
 }
-#else
 
-#include <stdlib.h>
-#include <time.h>
-
-inline double rnd(void) {
-
-  static int once = 0;
- if (!once) {
-   srand(time(NULL)); /* use 'time' to initialize the random number generator */
-   ++once;
- }
-
- return ((double)rand())/ ((double)RAND_MAX);
-}
-#endif
-
-// =========================================

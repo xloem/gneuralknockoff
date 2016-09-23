@@ -28,7 +28,6 @@
 #include "binom.h"
 #include "fact.h"
 #include "activation.h"
-#include <math.h>
 
 #define PI M_PI
 

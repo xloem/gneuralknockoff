@@ -22,9 +22,8 @@
 
 // compute the specified error of a (training) neural network
 
-#include <error.h>
-#include <math.h>
-#include <feedforward.h>
+#include "includes.h"
+#include "feedforward.h"
 
 double error(network *nn, network_config *config){
  register int n;

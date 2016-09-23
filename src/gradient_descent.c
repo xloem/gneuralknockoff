@@ -24,10 +24,9 @@
 
 // performs a gradient descent search of the best weights during the training process
 
-#include <gradient_descent.h>
-#include <error.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include "includes.h"
+#include "gradient_descent.h"
+
 
 void gradient_descent(network *nn, network_config *config) {
  int output = config->verbosity;	/* screen output - on/off */

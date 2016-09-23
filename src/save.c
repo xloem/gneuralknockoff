@@ -20,10 +20,9 @@
 
 */
 
+#include "includes.h"
 #include "save.h"
 #include "feedforward.h"
-#include <stdio.h>
-#include <stdlib.h>
 
 void network_save(network *nn, network_config *config) {
  int output = config->verbosity; /* screen output - on/off */

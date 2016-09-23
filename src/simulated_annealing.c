@@ -24,13 +24,10 @@
 
 // train the neural network by means of simulated annealing to optimize the weights
 
-#include <simulated_annealing.h>
-#include <randomize.h>
-#include <rnd.h>
-#include <error.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
+#include "simulated_annealing.h"
+#include "randomize.h"
+#include "rnd.h"
+#include "includes.h"
 
 void simulated_annealing(network *nn, network_config *config) {
  int output = config->verbosity;	/* screen output - on/off */

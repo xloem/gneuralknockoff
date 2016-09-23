@@ -19,7 +19,9 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 */
+#ifndef INCLUDES_H
 
+#include<error.h>
 #include<getopt.h>
 #include<stdio.h>
 #include<stdlib.h>
@@ -34,3 +36,5 @@
 #include<strings.h>
 #endif
 #include<omp.h>
+
+#endif

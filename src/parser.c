@@ -24,9 +24,8 @@
 
 // read the input script to define the network and its task
 
-#include <parser.h>
-#include <string.h>
-#include <stdlib.h>
+#include "includes.h"
+#include "parser.h"
 
 enum main_token_id {
   _COMMENT,

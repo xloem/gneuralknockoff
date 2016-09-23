@@ -24,12 +24,9 @@
 
 // perform a modified version of the multi-scale Monte Carlo optimization to train the network
 
-#include <msmco.h>
-#include <error.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <math.h>
-#include <rnd.h>
+#include "includes.h"
+#include "msmco.h"
+#include "rnd.h"
 
 void msmco(network *nn, network_config *config) {
  int output = config->verbosity;/* screen output - on/off */

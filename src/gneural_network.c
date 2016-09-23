@@ -43,13 +43,13 @@
 
 */
 
-#include <includes.h>
-#include <defines.h>
-#include <network.h>
-#include <randomize.h>
-#include <parser.h>
-#include <load.h>
-#include <save.h>
+#include "includes.h"
+#include "defines.h"
+#include "network.h"
+#include "randomize.h"
+#include "parser.h"
+#include "load.h"
+#include "save.h"
 
 static const struct option longopts[] =
 {

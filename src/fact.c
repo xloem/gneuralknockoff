@@ -25,7 +25,7 @@
 // originally written by : Jean Michel Sellier
 // improved by           : Dmytriy Tereschenko
 
-#include <fact.h>
+#include "fact.h"
 
 inline uint64_t fact(uint32_t n){
  uint64_t res=1;

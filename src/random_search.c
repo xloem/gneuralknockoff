@@ -24,11 +24,9 @@
 
 // perform a random search of the best weights of a network during the training process
 
-#include <random_search.h>
-#include <randomize.h>
-#include <error.h>
-#include <stdlib.h>
-#include <stdio.h>
+#include "includes.h"
+#include "random_search.h"
+#include "randomize.h"
 
 
 void random_search(network *nn, network_config *config) {

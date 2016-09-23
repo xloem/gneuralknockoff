@@ -50,17 +50,14 @@
 # define d_print(fmt, args...)
 #endif
 
-#include <network.h>
-#include <defines.h>
-#include <msmco.h>
-#include <random_search.h>
-#include <simulated_annealing.h>
-#include <gradient_descent.h>
-#include <genetic_algorithm.h>
-
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
+#include "includes.h"
+#include "network.h"
+#include "defines.h"
+#include "msmco.h"
+#include "random_search.h"
+#include "simulated_annealing.h"
+#include "gradient_descent.h"
+#include "genetic_algorithm.h"
 
 /*
  * network* API

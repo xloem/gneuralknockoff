@@ -22,10 +22,8 @@
 
 // returns the specified activation function given the input x
 
-#include <activation.h>
-#include <math.h>
-#include <stdlib.h>
-#include <stdio.h>
+#include "includes.h"
+#include "activation.h"
 
 inline double activation(enum activation_function type,double x){
  switch (type) {

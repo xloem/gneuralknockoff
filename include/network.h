@@ -23,8 +23,7 @@
 #ifndef NETWORK_H
 #define NETWORK_H
 
-// #include <includes.h>
-#include <defines.h>
+#include "defines.h"
 
 typedef struct _neuron{
  unsigned int global_id;	/* a unique global id for each neuron */
@@ -51,6 +50,7 @@ typedef struct _network{
  neuron *neurons;
 } network;
 
+// struct added by Ray Dillinger, Aug 2016
 struct newnet{
     unsigned int inputcount;       // nodes 1 to this number (inclusive) are inputs (node zero is reserved for bias).
     unsigned int outputcount;      // nodes (nodecount minus this number) to nodecount (exclusive) are outputs.
