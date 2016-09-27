@@ -74,6 +74,8 @@ static const char *main_token_n[] = {
   [_SAVE_OUTPUT]			= "SAVE_OUTPUT",
   [_OUTPUT_FILE_NAME]			= "OUTPUT_FILE_NAME",
 };
+
+
 const int main_token_count = 17;
 
 enum direction_enum {
@@ -145,7 +147,7 @@ static int get_switch_value(FILE *fp, const char *name)
 {
   int ret;
   char s[128];
-  ret = fscanf(fp, "%s", s);
+  ret = fscanf(fp, "%126s", s);
   if (ret < 0)
     exit(-1);
   return find_id(s, name, switch_n, switch_n_size);
@@ -220,7 +222,7 @@ static void sub_neuron_parser(network *nn, network_config *config, FILE *fp)
 	exit(-1);
   };
 
-  ret = fscanf(fp, "%s", s);
+  ret = fscanf(fp, "%126s", s);
   if (ret < 0)
     exit(-1);
   sub_token = find_id(s, "NEURON sub-token",
@@ -234,7 +236,7 @@ static void sub_neuron_parser(network *nn, network_config *config, FILE *fp)
 	}
 	break;
   case ACTIVATION: {
-	ret = fscanf(fp, "%s", s);
+	ret = fscanf(fp, "%126s", s);
 	int activ = find_id(s, neuron_sub_token_n[sub_token],
 		activation_names, activation_names_count);
 	nn->neurons[index].activation = activ;
@@ -242,7 +244,7 @@ static void sub_neuron_parser(network *nn, network_config *config, FILE *fp)
 	}
 	break;
   case ACCUMULATOR: {
-	ret = fscanf(fp, "%s", s);
+	ret = fscanf(fp, "%126s", s);
 	int accum = find_id(s,  neuron_sub_token_n[sub_token],
 		accumulator_names, accumulator_names_count);
 	nn->neurons[index].accumulator = accum;
@@ -292,7 +294,7 @@ static void sub_network_parser(network *nn, network_config *config, FILE *fp) {
   /*
    * parser NETWORK Sub-Token
    */
-  ret = fscanf(fp, "%s", s);
+  ret = fscanf(fp, "%126s", s);
   if (ret < 0)
     exit(-1);
   sub_token = find_id(s, "NETWORK sub-token",
@@ -312,7 +314,7 @@ static void sub_network_parser(network *nn, network_config *config, FILE *fp) {
 		printf("layer index is out of range!\n");
 		exit(-1);
 	}
-	ret = fscanf(fp, "%s", s);
+	ret = fscanf(fp, "%126s", s);
 	if (strcmp(s,"NUMBER_OF_NEURONS") != 0) {
 		printf("syntax error!\nNUMBER_OF_NEURONS expected!\n");
 		exit(-1);
@@ -373,7 +375,7 @@ static void sub_training_method_parser(network *nn, network_config *config, FILE
 
   int ret, method_id;
   char s[128];
-  ret = fscanf(fp, "%s", s);
+  ret = fscanf(fp, "%126s", s);
   if (ret < 0)
     exit(-1);
 
@@ -506,7 +508,7 @@ static void sub_training_method_parser(network *nn, network_config *config, FILE
 
 void parser(network *nn, network_config *config, FILE *fp){
  int ret;
- char s[180];
+ char s[256];
  double tmp;
  unsigned int token_id;
 
@@ -516,9 +518,8 @@ processing the input file\n\
 =========================\n");
  do{
   // read the current row
-  ret = fscanf(fp,"%s",s);
-  if (ret < 0)
-	return;
+     ret = fscanf(fp,"$254s" s);
+     if (ret == 0)return;
 
   token_id = find_id(s, "Token", main_token_n, main_token_count);
 
@@ -546,10 +547,10 @@ processing the input file\n\
   case _NUMBER_OF_TRAINING_CASES: {
 	int ncase = get_strictly_positive_number(fp, main_token_n[token_id]);
 	if (ncase > MAX_TRAINING_CASES) {
-		printf("NUMBER_OF_TRAINING_CASES is too large!\n");
-		printf("please increase MAX_TRAINING_CASES and recompile!\n");
-		exit(-1);
-		}
+	        printf("NUMBER_OF_TRAINING_CASES is too large!\n");
+	        printf("please increase MAX_TRAINING_CASES and recompile!\n");
+	        exit(-1);
+	        }
 	printf("NUMBER_OF_TRAINING_CASES = %d [OK]\n", ncase);
 	config->num_cases = ncase;
 	}
@@ -559,7 +560,7 @@ processing the input file\n\
   // syntax: TRAINING_CASE IN case_index neuron_index _connection_index value
   // syntax: TRAINING_CASE OUT case_index neuron_index value
   case _TRAINING_CASE: {
-	ret = fscanf(fp, "%s", s);
+	ret = fscanf(fp, "%254s", s);
 	int direction = find_id(s, main_token_n[token_id],
 		direction_n, direction_count);
 	switch (direction) {
@@ -632,7 +633,7 @@ processing the input file\n\
   // specify the output file name
   // syntax: OUTPUT_FILE_NAME filename
   case _OUTPUT_FILE_NAME: {
-	ret = fscanf(fp, "%s", s);
+	ret = fscanf(fp, "%254s", s);
 	config->output_file_name = malloc(strlen(s) + 1);
 	strcpy(config->output_file_name, s);
         printf("OUTPUT FILE NAME = %s [OK]\n", config->output_file_name);
@@ -640,12 +641,12 @@ processing the input file\n\
   // specify the number of cases for the output file
   // syntax: NUMBER_OF_INPUT_CASES num
   case _NUMBER_OF_INPUT_CASES: {
-	int num = get_strictly_positive_number(fp, "NUMBER_OF_INPUT_CASES");
-	if (num > MAX_NUM_CASES) {
-		printf("NUMBER_OF_INPUT_CASES is too large!\n");
-		printf("please increase MAX_NUM_CASES and recompile!\n");
-		exit(-1);
-		}
+       int num = get_strictly_positive_number(fp, "NUMBER_OF_INPUT_CASES");
+       if (num > MAX_NUM_CASES) {
+               printf("NUMBER_OF_INPUT_CASES is too large!\n");
+               printf("please increase MAX_NUM_CASES and recompile!\n");
+               exit(-1);
+               }
 	printf("NUMBER OF INPUT CASES = %d [OK]\n", num);
 	config->num_of_cases = num;
 	};
@@ -679,7 +680,7 @@ processing the input file\n\
   // at the end of the training process
   // syntax: SAVE_NEURAL_NETWORK
   case _SAVE_NEURAL_NETWORK: {
-	ret = fscanf(fp, "%s", s);
+	ret = fscanf(fp, "%254s", s);
 	config->save_network_file_name = malloc(strlen(s) + 1);
 	strcpy(config->save_network_file_name, s);
 	config->save_neural_network = ON;
@@ -691,7 +692,7 @@ processing the input file\n\
   // at the begining of the training process
   // syntax: LOAD_NEURAL_NETWORK
   case _LOAD_NEURAL_NETWORK: {
-	ret = fscanf(fp, "%s", s);
+	ret = fscanf(fp, "%254s", s);
 	config->load_network_file_name = malloc(strlen(s) + 1);
 	strcpy(config->load_network_file_name, s);
 	config->save_neural_network = ON;
@@ -710,7 +711,7 @@ processing the input file\n\
   // specify the error function for the training process
   // syntax: ERROR_TYPE MSE/ME
   case _ERROR_TYPE: {
-	ret = fscanf(fp, "%s", s);
+	ret = fscanf(fp, "%254s", s);
 	int errtype = find_id(s, main_token_n[token_id],
 		error_names, error_name_count);
 	config->error_type = errtype;
