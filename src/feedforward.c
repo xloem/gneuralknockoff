@@ -92,13 +92,14 @@ void feedforward(network *nn){
 // input combining functions. Some widely used, some just plain strange.  Routine by Ray D. 6 September 2016
 double combine(const int combiner, const double currentval, const double ad){
     switch(combiner){
-    case 0: return currentval + ad; // sigma - for "normal" networks.
-    case 1: return currentval * ad; // pi - useful for LSTM, etc.
-    case 2: return currentval + (ad / (1 + fabs(ad))); // softlimit - for ignoring outliers
-    case 3: return currentval + fabs(ad); // measures magnitude only.
-    case 4: return currentval + (ad > 0 ? log(ad + 1) : -log(fabs(ad)+1)); // softlog - for discounting outliers
-    case 5: return currentval > ad ? currentval : ad;  // max - for join layers
-    case 6: return ad > 0 ? currentval + ad : currentval; // ignore negative inputs
+    case 0: return currentval;   // Null combiner.  Ignores all inputs.
+    case 1: return currentval + ad; // sigma - for "normal" networks.
+    case 2: return currentval * ad; // pi - useful for LSTM, etc.
+    case 3: return currentval + (ad / (1 + fabs(ad))); // softlimit - for ignoring outliers
+    case 4: return currentval + fabs(ad); // measures magnitude only.
+    case 5: return currentval + (ad > 0 ? log(ad + 1) : -log(fabs(ad)+1)); // softlog - for discounting outliers
+    case 6: return currentval > ad ? currentval : ad;  // max - for join layers
+    case 7: return ad > 0 ? currentval + ad : currentval; // ignore negative inputs
     default: fprintf(stderr, "unknown combination function\n"); exit(1);
     }
 }
@@ -108,7 +109,7 @@ double combine(const int combiner, const double currentval, const double ad){
 inline double identity(const int combiner){ return (combiner == 1 ) ? 1.0 : 0.0; }
 
 // initialize an activation vector for use by a network. Routine by Ray D. 6 September 2016
-void init_activations(const struct newnet *const net, double *vec){
+void init_activations(const struct nnet *const net, double *vec){
 #pragma omp parallel for
     for (size_t pos = 0; pos < net->nodecount; pos++) vec[pos] = identity(net->transfer[pos]);
 }
@@ -204,7 +205,7 @@ void transfer(int fchoice, double *ins, double *outs, size_t width){
 // Handles recurrent networks. Saves history if desired so we can later do backprop.  Handles combinators varying by
 // node.  Handles transfer functions varying by node.  Handles transfer functions of differing widths.
 
-void fwdprop(const struct newnet *const net, const double *const inputs, double *const activations,
+void fwdprop(const struct nnet *const net, const double *const inputs, double *const activations,
 	     double *const history, double *const outputs){
     size_t wcount = 0;    size_t nodecount = 0;
     double *res = history != NULL ? history : alloca (sizeof(double) * net->nodecount);

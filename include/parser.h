@@ -22,9 +22,38 @@
 #ifndef PARSER_H
 #define PARSER_H
 
-#include <stdio.h>
-#include <network.h>
+#include "includes.h"
+#include "network.h"
+
+// The number of different accumulator functions
+#define ACCUMCOUNT 8
+// the names of the accumulator functions
+#define ACCTOKENS "None","Add","Multiply","SoftLimit","Magnitude","SoftLog","Maximum","Onesided"
+
+// the number of different output function names
+#define OUTPUTCOUNT 16
+// the first SINGLEOUTPUTS function names are for output functions that operate on exactly one node.
+#define SINGLEOUTPUTS 14
+#define OUTTOKENS "Identity","Tanh","Arctan","Logistic","SignedLogistic","Softsign","Logarithmic","StepFunction", "ReLU","SoftPlus",\
+"LogRectifier","Periodic","Gaussian","Spline","ParallelMult","ParallelMath"
+
+
+#define BFLEN 128
+struct slidingbuffer {
+    FILE *input;
+    int head;
+    int end;
+    int line;
+    int col;
+    char *warnings;
+    char buffer[BFLEN];
+};
+
 
 void parser(network *, network_config*, FILE *);
+void PrintWarnings(struct slidingbuffer *);
+void nnetparser(struct nnet *, struct slidingbuffer *);
+void nnetwriter(struct nnet *, FILE *);
+void debugnnet(struct nnet *net);
 
 #endif

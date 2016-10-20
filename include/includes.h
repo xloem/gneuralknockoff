@@ -21,8 +21,11 @@
 */
 #ifndef INCLUDES_H
 
+#include<assert.h>
+#include<ctype.h>
 #include<error.h>
 #include<getopt.h>
+#include<limits.h>
 #include<stdio.h>
 #include<stdlib.h>
 #include<inttypes.h>

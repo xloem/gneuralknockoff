@@ -51,7 +51,7 @@ typedef struct _network{
 } network;
 
 // struct added by Ray Dillinger, Aug 2016
-struct newnet{
+struct nnet{
     unsigned int inputcount;       // nodes 1 to this number (inclusive) are inputs (node zero is reserved for bias).
     unsigned int outputcount;      // nodes (nodecount minus this number) to nodecount (exclusive) are outputs.
     unsigned int nodecount;        // this many total nodes.
@@ -66,7 +66,6 @@ struct newnet{
     unsigned int *dests;           // each synapse has its own destination.
 };
 
-struct newnet *convertnetwork(struct _network *oldnet);
 
 
 typedef struct _network_config {
@@ -102,6 +101,15 @@ typedef struct _network_config {
   double cases_x[MAX_TRAINING_CASES][MAX_NUM_NEURONS][MAX_IN];
   double cases_y[MAX_TRAINING_CASES][MAX_NUM_NEURONS];
 } network_config;
+
+struct nnet *convertnetwork(struct _network *);
+int AddHiddenNodes(struct nnet *, int, int, int, unsigned int);
+int AddInputNodes(struct nnet *, int, int, int, unsigned int);
+int AddOutputNodes(struct nnet *, int, int, int, unsigned int);
+void AddConnections(struct nnet *, int, int, int, int, double *);
+void AddRandomizedConnections(struct nnet *, int, int, int, int);
+
+
 /*
  * network* API
  */

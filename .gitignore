@@ -12,3 +12,4 @@ Makefile
 aclocal.m4
 aclocal.m4*.patch
 src/gneural_network
+src/nnet

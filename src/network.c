@@ -49,6 +49,7 @@
 #include "network.h"
 #include "defines.h"
 #include "msmco.h"
+#include "randomize.h"
 #include "random_search.h"
 #include "simulated_annealing.h"
 #include "gradient_descent.h"
@@ -280,7 +281,7 @@ void network_print(network *nn)
 }
 
 // Prints a network of the new format.  --added by Ray D. 29 Aug 2016
-void newnet_print(struct newnet *net){
+void nnet_print(struct newnet *net){
     printf("=========\nnetwork (new format)\n");
     printf("network has %d nodes\n", net->nodecount);
     printf("network has %d connections including bias connections \n", net->synapsecount);
@@ -365,17 +366,127 @@ network_config *network_config_alloc_default()
 }
 
 
+struct nnet *newnet_alloc_default(){
+    struct nnet *retval = (struct newnet *)calloc(1, sizeof(struct newnet));
+    if (retval == NULL) {printf("Unable to allocate (in nnet_alloc_default).\n"); exit(1);}
+    //calloc does the right thing here: all pointers are NULL, all counts are zero.
+    return(retval);
+}
+
+// swaps a set of nodes with another equal-size set of nodes and patches up the connections.
+void SwapRange(struct nnet *net, int start, int star2, int len){
+    int count; int swap; unsigned int wsap;
+    if (start > star2) SwapRange(net, star2, start, len);
+    if (net == NULL || len < 0 || start < 0 || star2 < 0 || star2 + len >= net->nodecount){printf("improper call to SwapRange.\n"); exit(1);}
+    if (start + len >= star2){printf("SwapRange cannot swap overlapping ranges.\n");exit(1);}
+    if (start < net->inputcount && star2+len >= net->inputcount){printf("SwapRange cannot swap between input and non-input nodes.\n"); exit(1);}
+    if (start < (net->nodecount - net->outputcount) && star2+len >= (net->nodecount - net->outputcount))
+	{printf("SwapRange cannot swap between output and non-output nodes.\n"); exit(1);}
+    for (count = 0; count < len; count++){
+	swap = net->transfer[start+count]; net->transfer[start+count] = net->transfer[star2+count]; net->transfer[star2+count] = swap;
+	swap = net->accum[start+count]; net->accum[start+count] = net->accum[star2+count]; net->accum[star2+count] = swap;
+	wsap=net->transferwidths[start+count];net->transferwidths[start+count]=net->transferwidths[star2+count];net->transferwidths[star2+count]=wsap;
+    }
+    for (count = 0; count < net->synapsecount; count++){
+	if (net->sources[count] > start && net->sources[count] < start+len) net->sources[count] += (star2-start);
+	else if (net->sources[count] > star2 && net->sources[count] < star2+len)net->sources[count] += (start-star2);
+	if (net->dests[count] > start && net->dests[count] < start+len) net->dests[count] += (star2-start);
+	else if (net->dests[count] > star2 && net->dests[count] < star2+len)net->dests[count] += (start-star2);
+    }
+}
+
+// add (newcount) new nodes starting at (startloc). update synapses to maintain pre-existing connectivity. new nodes
+// should have the specified accumulator and transfer functions and transfer size - but being new will have no incoming
+// or outgoing connections.  This is NOT public - it could insert new nodes only part of which are in the input or
+// output ranges accidentally breaking input/output to connectivity mappings even though it preserves connectivity.
+int InsertNodes(struct nnet *net, int startloc, int newcount, int transferfn, int accumfn, unsigned int xfersize){
+    if (net == NULL || newcount < 0) {fprintf(stderr, "Program Error: improper call to InsertNodes.\n");exit(1);}
+    if (net->nodecount == 0) {net->nodecount++; net->inputcount++; startloc++;}
+    int *newtrans = (int *)malloc((net->nodecount + newcount)*sizeof(int));
+    int *newacc = (int *)malloc((net->nodecount + newcount)*sizeof(int));
+    unsigned int *xwidth = (unsigned int *)malloc((net->nodecount + newcount)*sizeof(int));
+    int count;
+    if (newtrans == NULL || newacc == NULL || xwidth == NULL) {
+	free(newtrans); free(newacc); free (xwidth); fprintf(stderr,"Runtime error: allocation failure while inserting nodes.\n");exit(1);}
+    newtrans[0] = newacc[0] = 0; xwidth[0] = 1; // reserve bias node
+    if (net->transfer != NULL && net->accum != NULL && net->transferwidths != NULL)
+	for (count = 1; count < startloc; count++){
+	    newtrans[count] = net->transfer[count]; newacc[count] = net->accum[count]; xwidth[count] = net->transferwidths[count];}
+    for (count = startloc; count < startloc + newcount; count++){ newtrans[count] = transferfn; newacc[count] = accumfn; xwidth[count] = xfersize;}
+    if (net->transfer != NULL && net->accum != NULL && net->transferwidths != NULL)
+	for (count = startloc; count < net->nodecount; count++){
+	    newtrans[count+newcount]=net->transfer[count];newacc[count+newcount]=net->accum[count];xwidth[count+newcount]=net->transferwidths[count];}
+    free(net->transfer); free (net->accum); free(net->transferwidths);
+    net->transfer = newtrans; net->accum = newacc; net->transferwidths = xwidth; net->nodecount += newcount;
+    for (count = 0; count < net->synapsecount; count++){
+	net->sources[count] += net->sources[count] < startloc ? 0 : newcount;
+	net->dests[count] += net->dests[count] < startloc ? 0 : newcount;
+    }
+    return(startloc);
+}
+
+// inserts non-input, non-output nodes.  New nodes will be at end of non-output nodes (but you can swapRange them within other nodes if you want).
+int AddHiddenNodes(struct nnet *net, int newnodes, int transferfn, int accumfn, unsigned int xfersize){
+    return (InsertNodes(net, net->nodecount - net->outputcount, newnodes, transferfn, accumfn, xfersize));
+}
 
 
-// produce a new-format network given an old-format network.  -- added by Ray D. 29 Aug 2016. The 'newnet' format has a
+// inserts input nodes to existing network.  New nodes will be at end of current input (but you can SwapRange them within input if you want).
+int AddInputNodes(struct nnet *net, int newnodes, int transferfn, int accumfn, unsigned int xfersize){
+    net->inputcount += newnodes;
+    return (InsertNodes(net, net->inputcount-newnodes, newnodes, transferfn, accumfn, xfersize));
+}
+
+
+// inserts output nodes into existing network.  New nodes will be at end of current output (but you can SwapRange them within output if you want).
+int AddOutputNodes(struct nnet *net, int newnodes, int transferfn, int accumfn, unsigned int xfersize){
+    net->outputcount += newnodes;
+    return (InsertNodes(net, net->nodecount, newnodes, transferfn, accumfn, xfersize));
+}
+
+// inserts connections into an existing network.
+void AddConnections(struct nnet *net, int fromstart, int fromend, int tostart, int toend, double *weight){
+    int wt = 0;
+    int newcount = net->synapsecount + (1+fromend-fromstart) * (1+toend-tostart);
+    net->weights = (double *)realloc(net->weights, newcount * sizeof(double));
+    net->sources = (unsigned int *)realloc(net->sources, newcount * sizeof(int));
+    net->dests = (unsigned int *)realloc(net->dests, newcount * sizeof(int));
+    if (net->weights == NULL || net->sources == NULL || net->dests == NULL) {printf("Runtime error: allocation failure in AddConnections.\n"); exit(1);}
+    for (int from = fromstart; from <= fromend; from++)
+	for (int to = tostart; to <= toend; to++){
+	    net->sources[net->synapsecount] = from;
+	    net->dests[net->synapsecount] = to;
+	    net->weights[net->synapsecount++] = weight[wt++];
+	}
+}
+
+// insert randomized connections into an existing network.
+void AddRandomizedConnections(struct nnet *net, int fromstart, int fromend, int tostart, int toend){
+    int wt = 0;
+    int newcount = net->synapsecount + (1+fromend-fromstart) * (1+toend-tostart);
+    net->weights = (double *)realloc(net->weights, newcount * sizeof(double));
+    net->sources = (unsigned int *)realloc(net->sources, newcount * sizeof(int));
+    net->dests = (unsigned int *)realloc(net->dests, newcount * sizeof(int));
+    if (net->weights == NULL || net->sources == NULL || net->dests == NULL) {printf("Runtime error: Allocation failure in AddRandomizedConnections.\n"); exit(1);}
+    for (int from = fromstart; from <= fromend; from++)
+	for (int to = tostart; to <= toend; to++){
+	    net->sources[net->synapsecount] = from;
+	    net->dests[net->synapsecount] = to;
+	    // FIXME: at some future stage of development auto-optimize the random ranges per Bengio & Glorot's paper, and Hinton's addendum to that paper.
+	    // And/or punt to the user and ask/allow THEM to specify a range for initialization.
+	    net->weights[net->synapsecount++] = randomfloat(-0.5, +0.5);
+	}
+}
+
+
+// produce a new-format network given an old-format network.  -- added by Ray D. 29 Aug 2016. The 'nnet' format has a
 //  single population of nodes (neurons) and a single sequence of connections (synapses).  The accumulation and transfer
-//  functions (accumulator and activation function from the old network) are called the first time in the sequence that
-//  the node is used as the source for any synapse. They are user definable on a per-node basis, as they are in the old
-//  network format.  Each node and connection has a global ID - which is the array index at which which its information
-//  is recorded. In the case of synapses the global ID is also the synapse's number in the sequence of synapse
-//  operations.
+//  functions are called the first time in the sequence that the node is used as the source for any synapse. They are
+//  user definable on a per-node basis, as they are in the old network format.  Each node and connection has a global ID
+//  - which is the array index at which which its information is recorded. In the case of synapses the global ID is also
+//  the synapse's number in the sequence of synapse operations.
 
-// The advantages of the newnet format are: First, it permits bias weights.  Second, it does not depend on a layered
+// The advantages of the nnet format are: First, it permits bias weights.  Second, it does not depend on a layered
 //  structure. It allows backward connections so it can be used for recurrent networks and it allows self connections,
 //  so it can be used for Boltzmann networks or LSTM's. In general it permits recurrent and topologically varied
 //  networks. Third, neither the number of nodes nor the number of connections is limited.  Fourth, it allows transfer
@@ -383,10 +494,10 @@ network_config *network_config_alloc_default()
 //  functions can be used).  Other than bias weights (initialized to zero) converted networks do not have these
 //  features.
 
-struct newnet *convertnetwork(struct _network *oldnet){
-    struct newnet *newval;    unsigned int layercount, neuroncount, connectioncount, nodenum;
+struct nnet *convertnetwork(struct _network *oldnet){
+    struct nnet *newval;    unsigned int layercount, neuroncount, connectioncount, nodenum;
     unsigned int synapsecount = 0;
-    if (oldnet == NULL || NULL == (newval = (struct newnet *)calloc(1, sizeof(struct newnet)))) return (NULL); // unable to allocate
+    if (oldnet == NULL || NULL == (newval = (struct nnet *)calloc(1, sizeof(struct newnet)))) return (NULL); // unable to allocate
     newval->nodecount = oldnet->num_of_neurons + 1; // add one to get space for reserved zero node.
     newval->inputcount = oldnet->layers[0].num_of_neurons;  // old structure assumed that all of layer zero is input.
     newval->outputcount = oldnet->layers[oldnet->num_of_layers - 1].num_of_neurons; // old structure assumed that all of last layer is output.

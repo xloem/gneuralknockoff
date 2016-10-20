@@ -22,6 +22,7 @@
 
 // assigns weights randomly for each neuron
 
+#include "includes.h"
 #include "randomize.h"
 #include "rnd.h"
 
@@ -35,3 +36,6 @@ void randomize(network *nn, network_config *config){
    nn->neurons[n].w[i] = config->wmin + rnd()*(config->wmax - config->wmin);
  }
 }
+
+// returns a random float (using random()) between min and max.
+double randomfloat(const double min, const double max){if (max < min) return randomfloat(max,min); return (min + ((double) random() / RAND_MAX) * (max - min));}

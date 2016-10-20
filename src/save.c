@@ -23,6 +23,7 @@
 #include "includes.h"
 #include "save.h"
 #include "feedforward.h"
+#include "parser.h" // for acctokens and outtokens
 
 void network_save(network *nn, network_config *config) {
  int output = config->verbosity; /* screen output - on/off */
@@ -128,4 +129,76 @@ void network_save_final_curve(network *nn, network_config *config)
 	fprintf(fp,"\n");
   }
   fclose(fp);
+}
+
+
+
+static const char* acctokens[ACCUMCOUNT] = {ACCTOKENS};
+static const char* outtokens[OUTPUTCOUNT] = {OUTTOKENS};
+
+// Netwriter produces a configfile that, when read by the parser, produces a network with the same topology, weights, and firing sequence of the network given
+// as an argument.  All three of these things can be changed by various kinds of training, and there are different ways of expressing even the same topology, so
+// this may be different from the way the configfile originally wrote it.
+void nnetwriter(struct nnet *net, FILE *out){
+    if (net == NULL || out == NULL) {fprintf(stderr,"Improper call to netwriter.\n"); exit(1); }
+    int start, end, width, acc, xfer;
+    if (net->nodecount < 2) return;
+    end = start = 1;
+    fprintf(out, "StartNodes\n");
+    for (start = end=1; end < net->inputcount && end+1 < net->nodecount; start=++end){
+	acc = net->accum[start]; xfer = net->transfer[start]; width = net->transferwidths[start];
+	while(end<net->inputcount && 1+end<net->nodecount && net->accum[end+1]==acc && net->transfer[end+1]==xfer && net->transferwidths[end+1]==width) end++;
+	if (width == 1) fprintf(out,"    CreateInput( %d, %s, %s)\n",1+end-start, acctokens[acc], outtokens[xfer] );
+	else fprintf(out,"    CreateInput( %d, %s, %s, %d)\n",1+end-start, acctokens[acc], outtokens[xfer], width);
+    }
+    for (; end < net->nodecount - net->outputcount && end+1 < net->nodecount; start=++end){
+	acc = net->accum[start]; xfer = net->transfer[start]; width = net->transferwidths[start];
+	while(end+1 < net->nodecount - net->outputcount && end + 1 < net->nodecount && net->accum[end+1]==acc && net->transfer[end+1]==xfer &&
+	      net->transferwidths[end+1]==width) end++;
+	if (width == 1) fprintf(out,"    CreateHidden( %d, %s, %s)\n",1+end-start, acctokens[acc], outtokens[xfer] );
+	else fprintf(out,"    CreateHidden( %d, %s, %s, %d)\n",1+end-start, acctokens[acc], outtokens[xfer], width);
+    }
+    for (start=end; end < net->nodecount; start=++end){
+	acc = net->accum[start]; xfer = net->transfer[start]; width = net->transferwidths[start];
+	while(end+1 < net->nodecount && net->accum[end+1]==acc && net->transfer[end+1]==xfer && net->transferwidths[end+1]==width) end++;
+	if (width == 1) fprintf(out,"    CreateOutput( %d, %s, %s)\n", 1+end-start, acctokens[acc], outtokens[xfer]);
+	else fprintf(out,"    CreateOutput( %d, %s, %s, %d)\n",1+end-start, acctokens[acc], outtokens[xfer], width);
+    }
+    fprintf(out, "EndNodes\n");
+    if (net->synapsecount == 0) return; else fprintf(out, "StartConnections\n");
+
+    // The logic in this while/switch construction is excessively intricate. Be careful and test a lot if you need to screw with it. - RD
+   int state, backtrack, conn, firstfrom, firstto, lastfrom, lastto, nex;
+    start = end = state = conn = firstfrom = firstto = lastfrom = lastto = nex = 0;
+    while (state != 4)
+	switch(state){
+	case 0: // ready to start on new expression
+	    end = start = conn; lastfrom=firstfrom=net->sources[conn]; lastto=firstto=net->dests[conn]; backtrack = nex = conn+1;
+	    state = conn >= net->synapsecount ? 4 : 1; break;
+	case 1: if (net->sources[nex] == net->sources[conn] && net->dests[nex] == 1+net->dests[conn]){// check for advancing in a row
+		if (net->sources[nex]==firstfrom){ end = conn = nex; lastto = net->dests[conn];
+		    if (nex+1 == net->synapsecount) state=3; else backtrack = ++nex;
+		} else if (net->dests[nex] >= firstto && net->dests[nex] <= lastto){
+		    if (net->dests[nex] == lastto){conn = end = nex;lastfrom = net->sources[nex];backtrack = ++nex;state = nex+1 == net->synapsecount ? 3 : 2;}
+		    else{if (nex+1==net->synapsecount){ conn = backtrack; state = 3;} else conn=nex++; }
+		} else { conn = backtrack; state = 3; fprintf(out,"# case 1 did nothing and we're skipping to 3.\n");}
+	    }else state=2; break;
+	case 2:
+	    if (net->dests[nex]==firstto && net->dests[conn]==lastto && net->sources[nex]==1+net->sources[conn]){// check for advancing in a column
+		if (firstto == lastto){end = conn = nex; lastfrom = net->sources[nex]; if (nex+1 < net->synapsecount) nex++; else state = 3;}
+		else {if (nex+1 == net->synapsecount){conn = backtrack; state = 3;} else {conn = nex; nex++; state = 1;}}
+	    } else {conn = backtrack; state = 3;} break;
+	case 3: // we've detected a complete expression.  print the connect statement and look for another.
+	    fprintf(out, "    Connect(" );
+	    if (firstfrom == lastfrom) fprintf(out,"%d ", firstfrom);    else fprintf(out, "{%d %d} ", firstfrom, lastfrom);
+	    if (firstto == lastto) fprintf(out,"%d ", firstto);          else fprintf(out, "{%d %d} ", firstto, lastto);
+	    if (start != end) {
+		fprintf(out, "[");
+		for (nex = start; nex <= end; nex++) fprintf(out, "%f ", net->weights[nex]); fprintf(out, "])\n");}
+	    else fprintf(out, "%f)\n", net->weights[start] );
+	    if (end == net->synapsecount) state = 4;                     else {state = 0; conn = end+1;}
+	case 4: break;
+	default: {fprintf(stderr, "Program error in while/switch stmt of netwriter.\n"); exit(1);}
+	}
+    fprintf(out, "EndConnections\n");
 }
