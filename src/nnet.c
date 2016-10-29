@@ -1,15 +1,39 @@
-
+#include "defines.h"
 #include "parser.h"
 #include "save.h"
+
+int HandleOptions(int argc, char **argv){// name, args, NULL, returnval
+    static struct option options[] = {
+	{"help", no_argument,NULL,'h'},{"version", no_argument,NULL,'v'},{"manpage", no_argument, NULL, 'H'},{"l", no_argument, NULL, "language"}, {"?", no_argument, NULL, '?'},
+	{0,0,0,0}};
+    int opt; int index;
+    opterr = 0;
+    while ((opt = getopt_long(argc, argv, "hv", options, NULL)) != -1)
+	switch(opt){
+	case 'v': printf("nnet 0.0.1\nCopyright(C) 2016 gneural_network developers\nLicense LGPLv3+. For information about copying, modifying, "
+			 "and distribution see <http://gnu.org/licenses/lgpl.html>.\n"); return 0;
+	case 'H': printf(MANPAGE);  break;
+	case 'l': printf(LANGMANPAGE); break;
+	default: /* includes '?' & 'h' by default.*/
+	    printf("usage: nnet <filename> | nnet -v | nnet -h\nOptions:\n"
+		   "  -h, -?, --help:  print this help and exit.\n"
+		   "  -H, --manpage:   print a manual fully describing nnet.\n"
+		   "  -v, --version:   version and copyright information.\n");
+	    return 0;
+	}
+    return 1;
+}
+
+
 
 int main(int argc, char** argv){
     struct nnet newt;                   struct slidingbuffer bf;
     char filename[256]; filename[0] = 0;
-    if (argc == 0) {fprintf(stderr, "Your system does not handle command line arguments in a way that this program understands.\n"); exit(1);}
-    if (argc > 2) fprintf(stderr, "%s does not process more than one gnetwork file in a single invocation.\n", argv[0]);
-    if (argc != 2) {fprintf(stderr, "Usage:  %s [filename] where 'filename.gnw' is the name of a gnetwork file.\n", argv[0]); exit(1);}
+    if (!HandleOptions(argc, argv)) exit(0);
+    if (argc > 2) fprintf(stderr, "%s does not process more than one nnet script in a single invocation.\n", argv[0]);
+    if (argc != 2) {fprintf(stderr, "Usage:  %s [filename] where 'filename.nnet' is the name of a nnet script.\n", argv[0]); exit(1);}
     bzero(&newt, sizeof(struct nnet));  bzero(&bf, sizeof(struct slidingbuffer));
-    strncpy(filename, argv[1], 250); strncat(filename, ".gnw", 255);
+    strncpy(filename, argv[1], 250); strncat(filename, ".nnet", 255);
     if (NULL == (bf.input = fopen(filename, "r"))) {printf("unable to open %s\n", filename); exit(1);}
     nnetparser( &newt, &bf);
     fflush(stdout);

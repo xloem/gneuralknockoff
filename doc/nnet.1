@@ -1,0 +1,93 @@
+.\" Process this file with
+.\" groff -man -Tascii nnet.1
+.\"
+.TH NNET 1 "NOVEMBER 2016" Linux "User Manuals"
+.SH NAME
+nnet \- define, train, and deploy feedforward, recurrent, or deep neural networks.
+.SH SYNOPSIS
+.B nnet
+.I filename
+
+.B nnet -v, nnet --version
+
+.B nnet -h, nnet --help
+
+.B nnet -l, nnet --language
+
+.SH DESCRIPTION
+.B nnet
+is a utility for general development of neural networks.  The neural networks it defines are not limited as to topology
+or depth, and many unusual node types such as LSTMs, pooling nodes, etc, are supported.  When invoked with a
+.I filename
+argument,
+.B nnet
+processes
+.I filename.nnet
+which must be a nnet script. See
+.B nnet_language(1)
+or invoke
+.B nnet -l
+for information about the script language. Nnet scripts specify the topology, weights, and firing sequence of an
+artificial neural network.  Optionally they may also specify training and/or testing instructions and data (or
+locations of data sources and destinations) for training, testing, validation, or deployment.
+
+When finished processing, or at intervals during training as specified by any training instructions in the script,
+.B nnet
+writes
+.I filename.out,
+a nnet script that specifies the network including changes made during processing or training.  If
+.I filename.out
+is saved while training is not yet complete, it will include a reduced training schedule corresponding to the amount of
+training that remains to be done.  If training is interrupted, renaming
+.I filename.out
+to
+.I filename.nnet
+and restarting with
+.B nnet
+.I filename
+will resume training from the most recent save point.
+
+Nnet scripts may be edited in any text editor.  Users may use the script language to add new training, testing, or
+deployment instructions, to change training parameters or switch to a different training method, or to directly modify
+the network definition and topology, eg by changing the number of input, output, or hidden nodes, adding layers while
+building deep networks, adding new connections or removing existing connections, etc. The edited file may then be saved
+as
+.I filename.nnet
+and used to restart
+.B nnet
+for continued processing.  Topology or weight edits will usually make the network less accurate until retraining has
+taken place, but whatever training has already been done need not be entirely lost.
+
+.SH OPTIONS
+.IP -v,--version
+Print the current version information of nnet and exit.
+.IP -h,--help
+Print this man page and exit.
+.IP -l,--language
+Print the nnet_language man page and exit.
+
+.SH
+.SH REPORTING BUGS
+.B nnet
+is part of the gneural_network project. You may report any bugs, or review the bug database, at
+
+<https://savannah.gnu.org/bugs/?group=gneuralnetwork>.
+
+.B nnet
+contains numerous self-diagnostic and constraint checks for things which will never happen unless the code contains an
+unsuspected bug.  Please notify us immediately if it ever exits printing a diagnostic message starting with the
+words 'Program Error.' Any such message would be reporting a bug in
+.B nnet
+itself, not a problem with your script.
+.SH AUTHOR
+Man page written by Ray Dillinger <bear at sonic dot net>
+.SH COPYRIGHT
+.B nnet
+and its documentation are Copyright (C) 2016 Ray Dillinger, Jean-Michel Sellier, and the Gneural_Network project.
+
+Permission is granted to modify and distribute the software and its sources subject to the conditions of the GNU Public
+License, version 3 or later.  Permission is granted to distribute the documentation, including this man page, subject to
+the conditions of the GNU Free Documentation License, version 1.3 or later.
+
+.SH SEE ALSO
+.BR nnet_language (1)

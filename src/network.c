@@ -281,7 +281,7 @@ void network_print(network *nn)
 }
 
 // Prints a network of the new format.  --added by Ray D. 29 Aug 2016
-void nnet_print(struct newnet *net){
+void nnet_print(struct nnet *net){
     printf("=========\nnetwork (new format)\n");
     printf("network has %d nodes\n", net->nodecount);
     printf("network has %d connections including bias connections \n", net->synapsecount);
@@ -366,8 +366,8 @@ network_config *network_config_alloc_default()
 }
 
 
-struct nnet *newnet_alloc_default(){
-    struct nnet *retval = (struct newnet *)calloc(1, sizeof(struct newnet));
+struct nnet *nnet_alloc_default(){
+    struct nnet *retval = (struct nnet *)calloc(1, sizeof(struct nnet));
     if (retval == NULL) {printf("Unable to allocate (in nnet_alloc_default).\n"); exit(1);}
     //calloc does the right thing here: all pointers are NULL, all counts are zero.
     return(retval);
@@ -497,7 +497,7 @@ void AddRandomizedConnections(struct nnet *net, int fromstart, int fromend, int 
 struct nnet *convertnetwork(struct _network *oldnet){
     struct nnet *newval;    unsigned int layercount, neuroncount, connectioncount, nodenum;
     unsigned int synapsecount = 0;
-    if (oldnet == NULL || NULL == (newval = (struct nnet *)calloc(1, sizeof(struct newnet)))) return (NULL); // unable to allocate
+    if (oldnet == NULL || NULL == (newval = (struct nnet *)calloc(1, sizeof(struct nnet)))) return (NULL); // unable to allocate
     newval->nodecount = oldnet->num_of_neurons + 1; // add one to get space for reserved zero node.
     newval->inputcount = oldnet->layers[0].num_of_neurons;  // old structure assumed that all of layer zero is input.
     newval->outputcount = oldnet->layers[oldnet->num_of_layers - 1].num_of_neurons; // old structure assumed that all of last layer is output.
