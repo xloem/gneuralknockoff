@@ -727,7 +727,7 @@ processing the input file\n\
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//  Below this point, all the definitions are provided for gnetwork (second build target with new network representation)//
+//  Below this point, all the definitions are provided for nnet (second build target with new network representation)    //
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -736,9 +736,8 @@ static const char* outtokens[OUTPUTCOUNT] = {OUTTOKENS};
 
 // output parse error msg and halt.  To free any dynamically allocated buffers, pass their address as free1. Otherwise pass NULL.
 void ErrStopParsing(struct slidingbuffer *bf, const char *msg, void *free1){
-    free(free1);
-    fflush(stdout);
-    fclose(bf->input);
+    assert (msg != NULL);
+    free(free1);    fflush(stdout);  fclose(bf->input);
     if (bf == NULL) fprintf(stderr, "\n %s\n",msg);
     else fprintf(stderr, "\nLine %d Col %d : %s\n", bf->line, bf->col, msg);
     exit(1);
@@ -746,6 +745,7 @@ void ErrStopParsing(struct slidingbuffer *bf, const char *msg, void *free1){
 
 // add a warning to the slidingbuffer - don't output it yet.
 void AddWarning(struct slidingbuffer *bf, const char *msg){
+    assert(msg != NULL);
     int warnlen = bf->warnings==NULL ? 0 : strlen(bf->warnings); int size = warnlen+strlen(msg)+50;
     bf->warnings = (char *)realloc(bf->warnings, size);
     char *cursor = &(bf->warnings[warnlen]);
@@ -753,11 +753,10 @@ void AddWarning(struct slidingbuffer *bf, const char *msg){
 }
 
 // print all warning messages so far saved in the slidingbuffer.
-void PrintWarnings(struct slidingbuffer *bf){if (bf->warnings != NULL) fprintf(stderr, "\n%s", bf->warnings);}
+void PrintWarnings(struct slidingbuffer *bf){assert(bf != NULL); if (bf->warnings != NULL) fprintf(stderr, "\n%s", bf->warnings);}
 
 // Ensure that there are at least min characters available in buffer.  Return 0 on fail, #chars available on success.
 int ChAvailable(struct slidingbuffer *bf, int min){
-    if (bf == NULL) ErrStopParsing(bf, "Program error: ChAvailable called improperly.",NULL);
     assert(bf != NULL);
     if (bf->head - bf->end < min)
 	while(!feof(bf->input) && (bf->head - bf->end < BFLEN ))bf->buffer[(bf->head++)%BFLEN]=fgetc(bf->input);
@@ -766,11 +765,12 @@ int ChAvailable(struct slidingbuffer *bf, int min){
 }
 
 // tell what the next character is without accepting it.
-int NextCh(struct slidingbuffer *bf){if (ChAvailable(bf,1)) return(bf->buffer[bf->end % BFLEN]); else return(0); }
+int NextCh(struct slidingbuffer *bf){assert(bf != NULL); if (ChAvailable(bf,1)) return(bf->buffer[bf->end % BFLEN]); else return(0); }
 
 // accept the specified number of characters updating the line & column counts.  Return #characters accepted.  Error messages give line numbers, so for verbose
 // debugging this routine outputs lines accepted with line numbers.
 int AcceptCh(struct slidingbuffer *bf, int len){
+    assert(bf != NULL);  assert(len >= 0);
     char next;
     static int AnnouncedLineZero = 0;
     if (!AnnouncedLineZero++)printf("    0: ");
@@ -787,6 +787,7 @@ int AcceptCh(struct slidingbuffer *bf, int len){
 
 // return tokenlength iff a given token is ready to read from bf, 0 otherwise.
 int TokenAvailable(struct slidingbuffer *bf, const char *token){
+    assert(bf != NULL); assert (token != NULL);
     int goal = strlen(token);
     if (!ChAvailable(bf,goal)) return(0);
     for (int ct = 0; ct < goal; ct++)if (bf->buffer[(bf->end+ct)%BFLEN] != token[ct]) return 0;
@@ -796,26 +797,25 @@ int TokenAvailable(struct slidingbuffer *bf, const char *token){
 // My duck is on fire.
 
 // accept a given token iff it is available at beginning of input.  Return #characters accepted
-int AcceptToken(struct slidingbuffer *bf, const char *token){ return(AcceptCh(bf, TokenAvailable(bf, token)));}
+int AcceptToken(struct slidingbuffer *bf, const char *token){assert(bf != NULL); assert (token != NULL); return(AcceptCh(bf, TokenAvailable(bf, token)));}
 
 // skip as much whitespace as there is available.
-void SkipWhiteSpace(struct slidingbuffer *bf){while (ChAvailable(bf,1) && isspace(NextCh(bf))) AcceptCh(bf, 1);}
+void SkipWhiteSpace(struct slidingbuffer *bf){assert(bf != NULL); while (ChAvailable(bf,1) && isspace(NextCh(bf))) AcceptCh(bf, 1);}
 
 // skip a comment iff a comment is at head of input. (comments are everything between # and EOL.)
-void SkipComment(struct slidingbuffer *bf){if (TokenAvailable(bf, "#")) while(NextCh(bf) != '\n') AcceptCh(bf, 1);}
+void SkipComment(struct slidingbuffer *bf){assert(bf != NULL); if (TokenAvailable(bf, "#")) while(NextCh(bf) != '\n') AcceptCh(bf, 1);}
 
 // read past all whitespace and comments to the next non-skipped character.
-void SkipToNext(struct slidingbuffer *bf){do{SkipWhiteSpace(bf); SkipComment(bf); } while(isspace(NextCh(bf)) || TokenAvailable(bf, "#"));}
+void SkipToNext(struct slidingbuffer *bf){assert(bf != NULL); do{SkipWhiteSpace(bf); SkipComment(bf); } while(isspace(NextCh(bf)) || TokenAvailable(bf, "#"));}
 
 // returns nonzero iff a number is available starting at the next character.
-int NumberAvailable(struct slidingbuffer *bf){int next = NextCh(bf);return (next == '+' || next == '-' || isdigit(next));}
+int NumberAvailable(struct slidingbuffer *bf){assert(bf != NULL); int next = NextCh(bf);return (next == '+' || next == '-' || isdigit(next));}
 
 // Read and return the number.  Controlled fail with helpful message if none available or wrong syntax. You must call 'NumberAvailable' to check validity first.
 int ReadInteger(struct slidingbuffer *bf){
-    if (bf == NULL) ErrStopParsing(bf, "Program error: Improper Call to ReadInteger.", NULL);
+    assert(bf != NULL);     assert(NumberAvailable(bf));
     static const int maxlen = (int)(log10(INT_MAX)) + 2;
     char buf[maxlen];
-    if (!NumberAvailable(bf)) ErrStopParsing(bf,"Program Error: Some fool called ReadInteger called without checking NumberAvailable first.",NULL);
     ChAvailable(bf,2);
     int count = 0; int negate = (NextCh(bf) == '-');
     if (negate || (NextCh(bf) == '+')) AcceptCh(bf,1);
@@ -829,8 +829,7 @@ int ReadInteger(struct slidingbuffer *bf){
 
 // Read and return the number.  Controlled fail with helpful message if none available or wrong syntax.  You must call 'NumberAvailable' first.
 double ReadFloatingPoint(struct slidingbuffer *bf){
-    if (bf == NULL) ErrStopParsing(bf, "Program error: Improper Call to ReadFloatingPoint.", NULL);
-    if (!NumberAvailable(bf)) ErrStopParsing(bf,"Program Error: Some fool called ReadFloatingPoint without checking NumberAvailable first.",NULL);
+    assert(bf != NULL);    assert(NumberAvailable(bf));
     static const int maxlen = 1085; // max decimal length for (negative, denormalized, 64-bit) double is 1079!!  That's CRAZY!
     char buf[maxlen]; int count = 0; int before = 0; int after = 0;
     if (!TokenAvailable(bf,"+") && !TokenAvailable(bf,"-") && !isdigit(NextCh(bf))) return (0);
@@ -858,7 +857,7 @@ double ReadFloatingPoint(struct slidingbuffer *bf){
 
 // returns zero for failure, nonzero for success.
 int ReadIntSpan(struct slidingbuffer *bf, int *start, int *end){
-    if (bf == NULL || start == NULL) ErrStopParsing(bf,"Program Error: Improper call to ReadIntSpan.",NULL);
+    assert(bf != NULL); assert (start != NULL);
     SkipToNext(bf);    if (!AcceptToken(bf,"{")) return 0;
     SkipToNext(bf);    if (!NumberAvailable(bf)) ErrStopParsing(bf, "Integer span starts with non-numeric token.  Integer Expected.",NULL);
     *start = ReadInteger(bf);
@@ -871,10 +870,8 @@ int ReadIntSpan(struct slidingbuffer *bf, int *start, int *end){
 
 // read a weight matrix.  Return 0 for failure, 1 for success
 int ReadWeightMatrix(struct slidingbuffer *bf, double *target, int size){
-    if (bf == NULL || target == NULL || size < 1) ErrStopParsing(bf, "Program Error: Improper Call to ReadFloatingPoint.", NULL);
+    assert(bf != NULL); assert (target != NULL); assert (size > 0);
     int index;
-    if (bf == NULL) ErrStopParsing(bf, "Program Error: ReadWeightMatrix called with null buffer.",NULL); // This never happens
-    if (target == NULL) ErrStopParsing(bf, "Program Error: ReadWeightMatrix called with null matrix.",NULL);
     SkipToNext(bf); if (!AcceptToken(bf,"[")) return 0;
     for (index = 0; index < size; index++){
 	SkipToNext(bf);  if (NumberAvailable(bf)) target[index] = ReadFloatingPoint(bf);
@@ -889,7 +886,7 @@ int ReadWeightMatrix(struct slidingbuffer *bf, double *target, int size){
 
 #define WARNSIZE 256
 int ReadCreateNodeStmt(struct slidingbuffer *bf, struct nnet *net){
-    if (bf == NULL || net == NULL) ErrStopParsing(bf, "Program Error: Improper call to ReadCreateNodeStmt.",NULL);
+    assert(bf != NULL); assert (net != NULL);
     int in_hid_out = 0;
     int NumToCreate = 0;
     int Accum = 0;
@@ -900,7 +897,7 @@ int ReadCreateNodeStmt(struct slidingbuffer *bf, struct nnet *net){
     if (AcceptToken(bf,     "CreateInput")) in_hid_out = 1;
     else if (AcceptToken(bf,"CreateHidden")) in_hid_out = 2;
     else if (AcceptToken(bf,"CreateOutput")) in_hid_out = 3;
-    else ErrStopParsing(bf, "Program Error: unhandled case(1) in ReadCreateNodeStmt",NULL); // this never happens if TokenAvailable and AcceptToken are correct.
+    else assert (false); // unhandled case.
     SkipToNext(bf);    if (!AcceptToken(bf, "(")) ErrStopParsing(bf, "Expected Open Parenthesis",NULL);
     SkipToNext(bf);    if (!NumberAvailable(bf)) ErrStopParsing(bf, "First argument of a node creation statement must be an integer.",NULL);
     NumToCreate = ReadInteger(bf);
@@ -912,7 +909,7 @@ int ReadCreateNodeStmt(struct slidingbuffer *bf, struct nnet *net){
 	for (ct = 0; ct < ACCUMCOUNT && printed + strlen(acctokens[ct])+5 < WARNSIZE; ct++)
 	    printed += snprintf(&(warnstring[printed]), WARNSIZE-printed, " %s", acctokens[ct]);
 	snprintf(&(warnstring[printed]),WARNSIZE-printed, ".");
-	if (ct < ACCUMCOUNT) ErrStopParsing(bf, "Program Error in parser.c: WARNSIZE is too small.", NULL);
+	assert (ct == ACCUMCOUNT); // if it's not we didn't have enough space in warnstring for the names of our input functions.
 	ErrStopParsing(bf, warnstring, NULL);
     }
     SkipToNext(bf); if (!AcceptToken(bf,",")) ErrStopParsing(bf, "Expected comma between arguments.",NULL);
@@ -922,7 +919,7 @@ int ReadCreateNodeStmt(struct slidingbuffer *bf, struct nnet *net){
 	for (ct = 0; ct < OUTPUTCOUNT && printed + strlen(outtokens[ct])+5 < WARNSIZE; ct++)
 	    printed += snprintf(&(warnstring[printed]), WARNSIZE-printed, " %s", outtokens[ct]);
 	snprintf(&(warnstring[printed]), WARNSIZE-printed, ".");
-	if (ct < OUTPUTCOUNT) ErrStopParsing(bf, "Program Error in parser.c: WARNSIZE is too small.", NULL);
+	assert (ct == OUTPUTCOUNT); // if it's not we didn't have enough space in warnstring for the names of our activation functions.
 	ErrStopParsing(bf,warnstring,NULL);
     }
     if (Transfer >= SINGLEOUTPUTS){
@@ -948,14 +945,13 @@ int ReadCreateNodeStmt(struct slidingbuffer *bf, struct nnet *net){
 	}
 	break;
     case 3: AddOutputNodes(net, NumToCreate, Transfer, Accum, unitwidth); break;
-    default: ErrStopParsing(bf, "Program Error: Unhandled case(2) in ReadCreateNodeStmt.",NULL); // This never happens
+    default: assert(false); // Unhandled case.
     }
-    // printf("ReadCreateNodeStmt returning successful.\n");
     return (1);
 }
 
 int ReadConnectStmt(struct slidingbuffer *bf, struct nnet *net){
-    if (bf == NULL || net == NULL) ErrStopParsing(bf,"Program Error: Improper call to ReadConnectStmt.",NULL); // This never happens
+    assert(bf != NULL); assert (net != NULL);
     int firstlow;             int secondlow;
     int firsthigh;            int secondhigh;
     double weight = 0.0;      int imm_rnd_matrix = 0;
@@ -1041,13 +1037,13 @@ int ValidateConnections(struct slidingbuffer *bf, struct nnet *net){
 	    else snprintf(wstr,WARNSIZE,"Warning: node %d is a hidden node that does not receive any signals.",indexnode);
 	    AddWarning(bf,wstr);}
     }
-    return (1); // return value signals parse failure if 0. For now always returns 1.  TODO, optionally trigger topological reduction with it. 
+    return (1); // return value signals parse failure if 0. For now always returns 1.  TODO, optionally trigger topological reduction with it.
 }
 
 
 // Connection statements, until 'EndConnections'
 int ReadConnections(struct slidingbuffer *bf, struct nnet *net){
-    if (bf == NULL || net == NULL) ErrStopParsing(bf,"Program Error: Improper Call to ReadConnections.",NULL);
+    assert(bf != NULL); assert (net != NULL);
     SkipToNext(bf);
     if (!AcceptToken(bf, "StartConnections")) return (0);
     if (net->nodecount == 0) ErrStopParsing(bf, "Found 'StartConnections', expected 'StartNodes.' Nodes cannot be connected before they are defined.",NULL);
@@ -1059,8 +1055,9 @@ int ReadConnections(struct slidingbuffer *bf, struct nnet *net){
     return ValidateConnections(bf,net);
 }
 
-// prints information about network to screen.
+// prints low-level information about network suitable for automated analysis via sed, etc.
 void debugnnet(struct nnet *net){
+    assert(net != NULL);
     int count;
     printf("nodecount %d, inputcount %d, outputcount %d\n", net->nodecount, net->inputcount, net->outputcount);
     printf("Nodes\n");
@@ -1080,6 +1077,7 @@ void debugnnet(struct nnet *net){
 
 
 void nnetparser(struct nnet *net, struct slidingbuffer *input){
+    assert(net != NULL); assert(input != NULL);
     //    ReadHeader(net,conf);
     //    ReadTrainingSection(net,conf);
     //    ReadDataSection(net,conf);
