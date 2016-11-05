@@ -4,8 +4,9 @@
 
 int HandleOptions(int argc, char **argv){// name, args, NULL, returnval
     static struct option options[] = {
-	{"help", no_argument,NULL,'h'},{"version", no_argument,NULL,'v'},{"manpage", no_argument, NULL, 'H'},{"l", no_argument, NULL, "language"}, {"?", no_argument, NULL, '?'},
-	{0,0,0,0}};
+	{"help", no_argument,NULL,'h'},        {"version", no_argument,NULL,'v'},
+	{"manpage", no_argument, NULL, 'H'},   {"language", no_argument, NULL, 'l'},
+	{"?", no_argument, NULL, '?'},         {0,0,0,0}};
     int opt; int index;
     opterr = 0;
     while ((opt = getopt_long(argc, argv, "hv", options, NULL)) != -1)
@@ -13,7 +14,7 @@ int HandleOptions(int argc, char **argv){// name, args, NULL, returnval
 	case 'v': printf("nnet 0.0.1\nCopyright(C) 2016 gneural_network developers\nLicense LGPLv3+. For information about copying, modifying, "
 			 "and distribution see <http://gnu.org/licenses/lgpl.html>.\n"); return 0;
 	case 'H': printf(MANPAGE);  break;
-	case 'l': printf(LANGMANPAGE); break;
+	case 'l': printf(LANGMAN); break;
 	default: /* includes '?' & 'h' by default.*/
 	    printf("usage: nnet <filename> | nnet -v | nnet -h\nOptions:\n"
 		   "  -h, -?, --help:  print this help and exit.\n"

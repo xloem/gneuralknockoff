@@ -897,7 +897,7 @@ int ReadCreateNodeStmt(struct slidingbuffer *bf, struct nnet *net){
     if (AcceptToken(bf,     "CreateInput")) in_hid_out = 1;
     else if (AcceptToken(bf,"CreateHidden")) in_hid_out = 2;
     else if (AcceptToken(bf,"CreateOutput")) in_hid_out = 3;
-    else assert (false); // unhandled case.
+    else assert (1 == 0); // unhandled case.
     SkipToNext(bf);    if (!AcceptToken(bf, "(")) ErrStopParsing(bf, "Expected Open Parenthesis",NULL);
     SkipToNext(bf);    if (!NumberAvailable(bf)) ErrStopParsing(bf, "First argument of a node creation statement must be an integer.",NULL);
     NumToCreate = ReadInteger(bf);
@@ -945,7 +945,7 @@ int ReadCreateNodeStmt(struct slidingbuffer *bf, struct nnet *net){
 	}
 	break;
     case 3: AddOutputNodes(net, NumToCreate, Transfer, Accum, unitwidth); break;
-    default: assert(false); // Unhandled case.
+    default: assert(1 == 0); // Unhandled case.
     }
     return (1);
 }
