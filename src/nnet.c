@@ -2,6 +2,12 @@
 #include "parser.h"
 #include "save.h"
 
+#define HELPSTRING
+"usage: nnet <filename> | nnet -v | nnet -h | nnet -H | nnet -l \nOptions:\n\
+  -h, -?, --help:  print this help and exit.\n\
+  -H, --manpage:   print a manual fully describing nnet.\n\
+  -v, --version:   version and copyright information.\n"
+
 int HandleOptions(int argc, char **argv){// name, args, NULL, returnval
     static struct option options[] = {
 	{"help", no_argument,NULL,'h'},        {"version", no_argument,NULL,'v'},
@@ -9,17 +15,14 @@ int HandleOptions(int argc, char **argv){// name, args, NULL, returnval
 	{"?", no_argument, NULL, '?'},         {0,0,0,0}};
     int opt; int index;
     opterr = 0;
-    while ((opt = getopt_long(argc, argv, "hv", options, NULL)) != -1)
+    while ((opt = getopt_long(argc, argv, "hvHl", options, NULL)) != -1)
 	switch(opt){
 	case 'v': printf("nnet 0.0.1\nCopyright(C) 2016 gneural_network developers\nLicense LGPLv3+. For information about copying, modifying, "
 			 "and distribution see <http://gnu.org/licenses/lgpl.html>.\n"); return 0;
 	case 'H': printf(MANPAGE);  break;
 	case 'l': printf(LANGMAN); break;
 	default: /* includes '?' & 'h' by default.*/
-	    printf("usage: nnet <filename> | nnet -v | nnet -h\nOptions:\n"
-		   "  -h, -?, --help:  print this help and exit.\n"
-		   "  -H, --manpage:   print a manual fully describing nnet.\n"
-		   "  -v, --version:   version and copyright information.\n");
+	    printf(HELPSTRING);
 	    return 0;
 	}
     return 1;
