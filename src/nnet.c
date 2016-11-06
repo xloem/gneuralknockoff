@@ -54,7 +54,7 @@ int main(int argc, char** argv){
     fclose(bf.input); bf.input = NULL;
     strcpy(&(filename[strlen(filename)-3]), "out");
     FILE *outf = fopen(filename, "w");
-    if (outf == NULL) {printf("unable to open %s", filename);exit(1);}
+    if (outf == NULL) {fprintf(stderr, "unable to open %s", filename);exit(1);}
     debugnnet(&newt);
     nnetwriter( &newt, &netconf, outf);
     fclose(outf);
