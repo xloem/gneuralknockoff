@@ -52,8 +52,7 @@ struct slidingbuffer {
 
 void parser(network *, network_config*, FILE *);
 void PrintWarnings(struct slidingbuffer *);
-void nnetparser(struct nnet *, struct slidingbuffer *);
-void nnetwriter(struct nnet *, FILE *);
+void nnetparser(struct nnet *, struct conf *, struct slidingbuffer *);
 void debugnnet(struct nnet *net);
 
 #endif

@@ -66,6 +66,13 @@ struct nnet{
     unsigned int *dests;           // each synapse has its own destination.
 };
 
+// struct added by Ray Dillinger, Nov 2016
+struct conf{
+    char *openingcomment;
+    unsigned int configflags;
+    unsigned int serialnum;
+    char *savename;
+};
 
 
 typedef struct _network_config {

@@ -210,11 +210,10 @@ DESCRIPTION\n\
        ments,  line  breaks,  or  spaces  anywhere  except  in the middle of\n\
        tokens, without altering the meaning of the script.\n\
 \n\
-       A comment in nnet script is anything that appears between a “#” char‐\n\
-       acter and the end of the line.\n\
-\n\
        A  nnet script is divided into sections of several types.  These sec‐\n\
        tions are:\n\
+\n\
+       Initial Comment\n\
 \n\
        Nnet Configuration\n\
 \n\
@@ -233,6 +232,17 @@ DESCRIPTION\n\
        Training\n\
 \n\
        To take them one at a time:\n\
+\n\
+   Initial Comment\n\
+       Comments  may  occur anywhere in a nnet script file. They begin with a\n\
+       “#” character and end with a newline.  Initial Comments  are  comments\n\
+       at  the  very start of a script file.  Any non-comment character, even\n\
+       whitespace characters, terminates Initial Comments.  Initial  Comments\n\
+       will  be  copied  verbatim into the output file. Comments appearing at\n\
+       other places in the script will not appear  in  the  generated  output\n\
+       file.   This  allows project notes, including an interpreter ('crunch‐\n\
+       bang' or 'shebang') line, to be propagated through nnet to later  ver‐\n\
+       sions of the network file.\n\
 \n\
    Nnet Configuration Section\n\
        Nnet Configuration Sections customize the way nnet  works  with  this\n\

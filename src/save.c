@@ -139,9 +139,10 @@ static const char* outtokens[OUTPUTCOUNT] = {OUTTOKENS};
 // Netwriter produces a configfile that, when read by the parser, produces a network with the same topology, weights, and firing sequence of the network given
 // as an argument.  All three of these things can be changed by various kinds of training, and there are different ways of expressing even the same topology, so
 // this may be different from the way the configfile originally wrote it.
-void nnetwriter(struct nnet *net, FILE *out){
-    if (net == NULL || out == NULL) {fprintf(stderr,"Improper call to netwriter.\n"); exit(1); }
+void nnetwriter(struct nnet *net, struct conf *config, FILE *out){
+    assert(net != NULL); assert (out != NULL);
     int start, end, width, acc, xfer;
+    if (config->openingcomment != NULL) fprintf(out, "%s", config->openingcomment);
     if (net->nodecount < 2) return;
     end = start = 1;
     fprintf(out, "StartNodes\n");

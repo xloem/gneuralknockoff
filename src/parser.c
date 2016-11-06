@@ -805,6 +805,8 @@ void SkipWhiteSpace(struct slidingbuffer *bf){assert(bf != NULL); while (ChAvail
 // skip a comment iff a comment is at head of input. (comments are everything between # and EOL.)
 void SkipComment(struct slidingbuffer *bf){assert(bf != NULL); if (TokenAvailable(bf, "#")) while(NextCh(bf) != '\n') AcceptCh(bf, 1);}
 
+
+
 // read past all whitespace and comments to the next non-skipped character.
 void SkipToNext(struct slidingbuffer *bf){assert(bf != NULL); do{SkipWhiteSpace(bf); SkipComment(bf); } while(isspace(NextCh(bf)) || TokenAvailable(bf, "#"));}
 
@@ -990,8 +992,39 @@ int ReadConnectStmt(struct slidingbuffer *bf, struct nnet *net){
 }
 
 
+// an opening comment from the nnet file is to be preserved and written back to the output file.  Aside from people putting project notes into the source file
+// and notes on how to connect it etc, this should allow for the preservation of a "shebang" line invoking nnet as a script handler on an executable output
+// file. We don't want to confuse the line/column counts for subsequent error messages, so no bypassing AcceptCh with the 'obvious' fgets or getline call.
+void ReadOpeningComment(struct conf *config, struct slidingbuffer *bf){
+
+    assert(config != NULL); assert (bf != NULL);
+    size_t index = 0; size_t allocsize = 240;
+    char *checkval;
+    char ch2Add;
+
+    if (!TokenAvailable(bf,"#")) {config->openingcomment = NULL; return;}
+    config->openingcomment = malloc(allocsize);
+    if (config->openingcomment == NULL) {fprintf(stderr, "allocation failure.\n");exit(1);}
+
+    while (TokenAvailable(bf, "#")){
+	while('\n' != (ch2Add = NextCh(bf))){
+	    AcceptCh(bf, 1);
+	    if (allocsize <= index+2){
+		allocsize = 2*allocsize; config->openingcomment = realloc(config->openingcomment, allocsize);
+		if (config->openingcomment == NULL){fprintf(stderr,"allocation failure.\n");exit(1);}
+	    }
+	    config->openingcomment[index++]=ch2Add;
+	}
+	config->openingcomment[index++]='\n';
+    }
+    config->openingcomment[index]='\0';
+    checkval = realloc(config->openingcomment, index);  // shouldn't fail because we're reducing size, but that's not guaranteed.  So if it does, keep the
+    if (checkval != NULL) config->openingcomment = checkval; // existing pointer value. It's not an allocation failure because we don't need to read more.
+}
+
 // Header: Project name, date, savefile, autosave intervals, source file, writeback file, noisy option, directions of which warnings to not report, etc.
-void ReadHeader(struct nnet *net, FILE *input){} //TODO
+void ReadHeader(struct nnet *net, struct conf *config, struct slidingbuffer *bf){ //TODO
+}
 
 // Error function, learning algorithm, algorithm parameters or parameters schedule, minibatch size, epoch size, maxEpochs, maxAccuracy, maxDivergence (between
 // training & testing accuracy), regularization strategy, regularization parameters, (clipping, L0, L1, L2, L3, Dropout)
@@ -1005,7 +1038,7 @@ void ReadDataSection(){} //TODO
 
 // Node definition statements, until 'EndNodes'
 int ReadNodeSection(struct slidingbuffer *bf, struct nnet *net){
-    if (bf == NULL || net == NULL) ErrStopParsing(bf,"Program Error: Improper call to ReadNodeSection.",NULL);
+    assert(bf != NULL); assert (net != NULL);
     SkipToNext(bf);    if (!AcceptToken(bf, "StartNodes"))return (0);
     if (net->nodecount != 0) ErrStopParsing(bf, "Only one Node Definition section is allowed in a configuration file.",NULL);
     if (ReadCreateNodeStmt(bf,net)) while (ReadCreateNodeStmt(bf, net));
@@ -1017,7 +1050,7 @@ int ReadNodeSection(struct slidingbuffer *bf, struct nnet *net){
 
 // Check at end of connections and add warning messages for questionable topology.    TODO: suppress these warnings/errors with a header statement.
 int ValidateConnections(struct slidingbuffer *bf, struct nnet *net){
-    if (bf == NULL || net == NULL) ErrStopParsing(bf, "Program Error: Improper call to ValidateConnections.", NULL);
+    assert(bf != NULL); assert (net != NULL);
     int indexconn = 0;    int indexnode = 1;  char wstr[WARNSIZE];
     while (net->sources[indexconn] != 0 && indexconn++ < net->synapsecount);
     if (indexconn == net->synapsecount)
@@ -1076,11 +1109,12 @@ void debugnnet(struct nnet *net){
 }
 
 
-void nnetparser(struct nnet *net, struct slidingbuffer *input){
+void nnetparser(struct nnet *net, struct conf *config, struct slidingbuffer *input){
     assert(net != NULL); assert(input != NULL);
-    //    ReadHeader(net,conf);
-    //    ReadTrainingSection(net,conf);
-    //    ReadDataSection(net,conf);
+    ReadOpeningComment(config, input);
+    //    ReadHeader(net,config, input);
+    //    ReadTrainingSection(net,config, input);
+    //    ReadDataSection(net,config,input);
     SkipToNext(input);
     if (!TokenAvailable(input, "StartNodes") && !TokenAvailable(input, "StartConnections"))
 	ErrStopParsing(input, "Expected 'StartNodes'  or 'StartConnections' statement.",NULL);

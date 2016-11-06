@@ -31,9 +31,9 @@ again on the modified script, enabling progressive staged development or midstre
 NNet script is whitespace insensitive.  You can insert tabs, comments, line breaks, or spaces anywhere except in the
 middle of tokens, without altering the meaning of the script.
 
-A comment in nnet script is anything that appears between a \(lq#\(rq character and the end of the line.
-
 A nnet script is divided into sections of several types.  These sections are:
+
+.B  Initial Comment
 
 .B  Nnet Configuration
 
@@ -52,6 +52,14 @@ A nnet script is divided into sections of several types.  These sections are:
 .B Training
 
 To take them one at a time:
+.SS Initial Comment
+Comments may occur anywhere in a nnet script file. They begin with a \(lq#\(rq character and end with a newline.  Initial
+Comments are comments at the very start of a script file.  Any non-comment character, even whitespace characters,
+terminates Initial Comments. Initial Comments will be copied verbatim into the output file. Comments appearing at other
+places in the script will not appear in the generated output file.  This allows project notes, including an interpreter
+('crunchbang' or 'shebang') line, to be propagated through
+.B nnet
+to later versions of the network file.
 .SS Nnet Configuration Section
 Nnet Configuration Sections customize the way
 .B nnet

@@ -30,5 +30,5 @@ void network_save(network *, network_config *);
 
 void network_save_final_curve(network *, network_config *);
 
-void netwriter(struct nnet *net, FILE *out);
+void nnetwriter(struct nnet *, struct conf *, FILE *);
 #endif
