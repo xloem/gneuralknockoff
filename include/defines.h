@@ -85,6 +85,20 @@ enum optimization_method {
 	MSMCO,
 };
 
+// flags for configuration to silence various outputs and warnings.
+#define SILENCE_BIAS 0x1
+#define SILENCE_DEBUG 0x2
+#define SILENCE_ECHO 0x4
+#define SILENCE_INPUT 0x8
+#define SILENCE_OUTPUT 0x10
+#define SILENCE_NODEINPUT 0x20
+#define SILENCE_NODEOUTPUT 0x40
+#define SILENCE_MULTIACTIVATION 0x80
+#define SILENCE_RECURRENCE 0x100
+#define SILENCE_RENUMBER 0x200
+
+
+
 #define MANPAGE "\
 NNET(1)                         User Manuals                         NNET(1)\n\
 \n\

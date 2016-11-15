@@ -69,7 +69,7 @@ struct nnet{
 // struct added by Ray Dillinger, Nov 2016
 struct conf{
     char *openingcomment;
-    unsigned int configflags;
+    unsigned int flags;
     unsigned int serialnum;
     char *savename;
 };

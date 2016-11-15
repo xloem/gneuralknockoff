@@ -753,7 +753,7 @@ void AddWarning(struct slidingbuffer *bf, const char *msg){
 }
 
 // print all warning messages so far saved in the slidingbuffer.
-void PrintWarnings(struct slidingbuffer *bf){assert(bf != NULL); if (bf->warnings != NULL) fprintf(stderr, "\n%s", bf->warnings);}
+void PrintWarnings(struct slidingbuffer *bf){assert(bf != NULL); if (bf->warnings != NULL) {fprintf(stderr, "\n%s", bf->warnings);}}
 
 // Ensure that there are at least min characters available in buffer.  Return 0 on fail, #chars available on success.
 int ChAvailable(struct slidingbuffer *bf, int min){
@@ -769,7 +769,7 @@ int NextCh(struct slidingbuffer *bf){assert(bf != NULL); if (ChAvailable(bf,1)) 
 
 // accept the specified number of characters updating the line & column counts.  Return #characters accepted.  Error messages give line numbers, so for verbose
 // debugging this routine outputs lines accepted with line numbers.
-int AcceptCh(struct slidingbuffer *bf, int len){
+int AcceptCh(struct slidingbuffer *bf, struct conf *config, int len){
     assert(bf != NULL);  assert(len >= 0);
     char next;
     static int AnnouncedLineZero = 0;
@@ -777,7 +777,13 @@ int AcceptCh(struct slidingbuffer *bf, int len){
     if (ChAvailable(bf, len)) {
 	for (int cn = 0; cn < len; cn++){
 	    next = NextCh(bf);
-	    if ('\n' == next){printf("\n %4d: ", ++(bf->line)); bf->col = 0;} else {printf("%c",next); bf->col++;}
+	    if ('\n' == next){
+		if ((config->flags & SILENCE_ECHO) == 0) printf("\n %4d: ", ++(bf->line));
+		bf->col = 0; }
+	    else {
+		if ((config->flags & SILENCE_ECHO) == 0) printf("%c",next);
+		bf->col++;
+	    }
 	    bf->end++;
 	}
 	return (len);
@@ -790,63 +796,68 @@ int TokenAvailable(struct slidingbuffer *bf, const char *token){
     assert(bf != NULL); assert (token != NULL);
     int goal = strlen(token);
     if (!ChAvailable(bf,goal)) return(0);
-    for (int ct = 0; ct < goal; ct++)if (bf->buffer[(bf->end+ct)%BFLEN] != token[ct]) return 0;
+    for (int ct = 0; ct < goal; ct++)if (bf->buffer[(bf->end+ct)%BFLEN] != token[ct]) return (0);
     return(goal);
 }
 
-// My duck is on fire.
+// my duck is still on fire.
 
 // accept a given token iff it is available at beginning of input.  Return #characters accepted
-int AcceptToken(struct slidingbuffer *bf, const char *token){assert(bf != NULL); assert (token != NULL); return(AcceptCh(bf, TokenAvailable(bf, token)));}
+int AcceptToken(struct slidingbuffer *bf, struct conf *config, const char *token){
+    assert(bf != NULL); assert (token != NULL); return(AcceptCh(bf, config,  TokenAvailable(bf, token)));}
+
 
 // skip as much whitespace as there is available.
-void SkipWhiteSpace(struct slidingbuffer *bf){assert(bf != NULL); while (ChAvailable(bf,1) && isspace(NextCh(bf))) AcceptCh(bf, 1);}
+void SkipWhiteSpace(struct slidingbuffer *bf, struct conf *config){assert(bf != NULL); while (ChAvailable(bf,1) && isspace(NextCh(bf))) AcceptCh(bf, config, 1);}
 
 // skip a comment iff a comment is at head of input. (comments are everything between # and EOL.)
-void SkipComment(struct slidingbuffer *bf){assert(bf != NULL); if (TokenAvailable(bf, "#")) while(NextCh(bf) != '\n') AcceptCh(bf, 1);}
-
+void SkipComment(struct slidingbuffer *bf, struct conf *config){assert(bf != NULL); if (TokenAvailable(bf, "#")) while(NextCh(bf) != '\n') AcceptCh(bf, config, 1);}
 
 
 // read past all whitespace and comments to the next non-skipped character.
-void SkipToNext(struct slidingbuffer *bf){assert(bf != NULL); do{SkipWhiteSpace(bf); SkipComment(bf); } while(isspace(NextCh(bf)) || TokenAvailable(bf, "#"));}
+void SkipToNext(struct slidingbuffer *bf, struct conf *config){
+    assert(bf != NULL); assert (config != NULL);
+    do{SkipWhiteSpace(bf, config); SkipComment(bf, config); } while(isspace(NextCh(bf)) || TokenAvailable(bf, "#"));}
 
 // returns nonzero iff a number is available starting at the next character.
 int NumberAvailable(struct slidingbuffer *bf){assert(bf != NULL); int next = NextCh(bf);return (next == '+' || next == '-' || isdigit(next));}
 
+
 // Read and return the number.  Controlled fail with helpful message if none available or wrong syntax. You must call 'NumberAvailable' to check validity first.
-int ReadInteger(struct slidingbuffer *bf){
+int ReadInteger(struct slidingbuffer *bf, struct conf *config){
     assert(bf != NULL);     assert(NumberAvailable(bf));
     static const int maxlen = (int)(log10(INT_MAX)) + 2;
     char buf[maxlen];
     ChAvailable(bf,2);
     int count = 0; int negate = (NextCh(bf) == '-');
-    if (negate || (NextCh(bf) == '+')) AcceptCh(bf,1);
+    if (negate || (NextCh(bf) == '+')) AcceptCh(bf, config, 1);
     if (!isdigit(NextCh(bf))) ErrStopParsing(bf, "Expected Integer.",NULL);
-    while(count <  maxlen && ChAvailable(bf,1) && isdigit(NextCh(bf))){buf[count++] = NextCh(bf); AcceptCh(bf,1);}
+    while(count <  maxlen && ChAvailable(bf,1) && isdigit(NextCh(bf))){buf[count++] = NextCh(bf); AcceptCh(bf, config, 1);}
     if ('.' == NextCh(bf)) ErrStopParsing(bf, "Found Decimal Fraction, Expected Integer.",NULL);
     if (count >= maxlen-2) ErrStopParsing(bf, "Integer too long.",NULL);
     buf[count] = 0;
     return( (1-(2*negate)) * atoi(buf));
 }
 
+
 // Read and return the number.  Controlled fail with helpful message if none available or wrong syntax.  You must call 'NumberAvailable' first.
-double ReadFloatingPoint(struct slidingbuffer *bf){
+double ReadFloatingPoint(struct slidingbuffer *bf, struct conf *config){
     assert(bf != NULL);    assert(NumberAvailable(bf));
     static const int maxlen = 1085; // max decimal length for (negative, denormalized, 64-bit) double is 1079!!  That's CRAZY!
     char buf[maxlen]; int count = 0; int before = 0; int after = 0;
     if (!TokenAvailable(bf,"+") && !TokenAvailable(bf,"-") && !isdigit(NextCh(bf))) return (0);
-    if (ChAvailable(bf,1) && (NextCh(bf) == '-' || NextCh(bf) == '+')) {buf[count++] = NextCh(bf); AcceptCh(bf,1);}
+    if (ChAvailable(bf,1) && (NextCh(bf) == '-' || NextCh(bf) == '+')) {buf[count++] = NextCh(bf); AcceptCh(bf, config, 1);}
     if (!ChAvailable(bf,1) || !isdigit(NextCh(bf))) ErrStopParsing(bf, "Expected Floating Point Value.",NULL);
-    while (ChAvailable(bf,1) && isdigit(NextCh(bf)) && count < maxlen-1){before = 1; buf[count++] = NextCh(bf); AcceptCh(bf,1);}
+    while (ChAvailable(bf,1) && isdigit(NextCh(bf)) && count < maxlen-1){before = 1; buf[count++] = NextCh(bf); AcceptCh(bf, config, 1);}
     if (!ChAvailable(bf,1) || NextCh(bf) != '.') ErrStopParsing(bf, "Floating-point values must have a decimal point.",NULL);
-    else {buf[count++] = NextCh(bf); AcceptCh(bf,1);}
-    while (ChAvailable(bf,1) && isdigit(NextCh(bf)) && count < maxlen-1) {after = 1; buf[count++] = NextCh(bf); AcceptCh(bf,1);}
+    else {buf[count++] = NextCh(bf); AcceptCh(bf, config, 1);}
+    while (ChAvailable(bf,1) && isdigit(NextCh(bf)) && count < maxlen-1) {after = 1; buf[count++] = NextCh(bf); AcceptCh(bf, config, 1);}
     if (before == 0 || after == 0) ErrStopParsing(bf,"Floating-point values must have digits before and after decimal.",NULL);
-    if (ChAvailable(bf,2) && count < (maxlen-2) && (AcceptToken(bf, "e") || AcceptToken(bf,"E"))){
+    if (ChAvailable(bf,2) && count < (maxlen-2) && (AcceptToken(bf, config, "e") || AcceptToken(bf, config, "E"))){
 	buf[count++] = 'e';
-	if (count < maxlen-2 && (NextCh(bf) == '+' || NextCh(bf) == '-')) {buf[count++] = NextCh(bf); AcceptCh(bf,1);}
+	if (count < maxlen-2 && (NextCh(bf) == '+' || NextCh(bf) == '-')) {buf[count++] = NextCh(bf); AcceptCh(bf, config, 1);}
 	if (!isdigit(NextCh(bf))) ErrStopParsing(bf,"Scientific notation floats must have digits in exponent.",NULL);
-	else while (count < maxlen-2 && ChAvailable(bf,1) && isdigit(NextCh(bf))) {buf[count++] = NextCh(bf); AcceptCh(bf,1);}
+	else while (count < maxlen-2 && ChAvailable(bf,1) && isdigit(NextCh(bf))) {buf[count++] = NextCh(bf); AcceptCh(bf, config, 1);}
     }
     if (count >= maxlen-2) ErrStopParsing(bf, "Floating-point value is too long.",NULL);
     buf[count] = 0;    int non0digits = 0;
@@ -857,37 +868,39 @@ double ReadFloatingPoint(struct slidingbuffer *bf){
     return(retval);
 }
 
+
 // returns zero for failure, nonzero for success.
-int ReadIntSpan(struct slidingbuffer *bf, int *start, int *end){
+int ReadIntSpan(struct slidingbuffer *bf, struct conf *config, int *start, int *end){
     assert(bf != NULL); assert (start != NULL);
-    SkipToNext(bf);    if (!AcceptToken(bf,"{")) return 0;
-    SkipToNext(bf);    if (!NumberAvailable(bf)) ErrStopParsing(bf, "Integer span starts with non-numeric token.  Integer Expected.",NULL);
-    *start = ReadInteger(bf);
-    SkipToNext(bf);    if (!NumberAvailable(bf)) ErrStopParsing(bf, "Integer span ends with non-numeric token.  Integer Expected.",NULL);
-    *end = ReadInteger(bf);
-    SkipToNext(bf);    if (!AcceptToken(bf,"}")) ErrStopParsing(bf, "Integer spans must end with \'}\'.",NULL);
+    SkipToNext(bf, config);    if (!AcceptToken(bf, config, "{")) return (0);
+    SkipToNext(bf, config);    if (!NumberAvailable(bf)) ErrStopParsing(bf, "Integer span starts with non-numeric token.  Integer Expected.",NULL);
+    *start = ReadInteger(bf, config);
+    SkipToNext(bf, config);    if (!NumberAvailable(bf)) ErrStopParsing(bf, "Integer span ends with non-numeric token.  Integer Expected.",NULL);
+    *end = ReadInteger(bf, config);
+    SkipToNext(bf,config);    if (!AcceptToken(bf, config, "}")) ErrStopParsing(bf, "Integer spans must end with \'}\'.",NULL);
     if (*start > *end) {int shuffle = *end; *end = *start; *start = shuffle;}
     return (1);
 }
 
+
 // read a weight matrix.  Return 0 for failure, 1 for success
-int ReadWeightMatrix(struct slidingbuffer *bf, double *target, int size){
+int ReadWeightMatrix(struct slidingbuffer *bf, struct conf *config, double *target, int size){
     assert(bf != NULL); assert (target != NULL); assert (size > 0);
     int index;
-    SkipToNext(bf); if (!AcceptToken(bf,"[")) return 0;
+    SkipToNext(bf, config); if (!AcceptToken(bf, config, "[")) return (0);
     for (index = 0; index < size; index++){
-	SkipToNext(bf);  if (NumberAvailable(bf)) target[index] = ReadFloatingPoint(bf);
+	SkipToNext(bf, config);  if (NumberAvailable(bf)) target[index] = ReadFloatingPoint(bf, config);
 	else if (TokenAvailable(bf, "]")) ErrStopParsing(bf,"Weight matrix has too few weights.",NULL);
 	else ErrStopParsing(bf, "Non-numeric token in weight matrix.",NULL);
     }
-    SkipToNext(bf);
+    SkipToNext(bf, config);
     if (NumberAvailable(bf)) ErrStopParsing(bf, "Weight matrix has too many weights.",NULL);
-    if (!AcceptToken(bf,"]")) ErrStopParsing(bf,"']' expected at end of weight matrix.",NULL);
-    return 1;
+    if (!AcceptToken(bf, config, "]")) ErrStopParsing(bf,"']' expected at end of weight matrix.",NULL);
+    return (1);
 }
 
 #define WARNSIZE 256
-int ReadCreateNodeStmt(struct slidingbuffer *bf, struct nnet *net){
+int ReadCreateNodeStmt(struct slidingbuffer *bf, struct conf *config, struct nnet *net){
     assert(bf != NULL); assert (net != NULL);
     int in_hid_out = 0;
     int NumToCreate = 0;
@@ -895,17 +908,17 @@ int ReadCreateNodeStmt(struct slidingbuffer *bf, struct nnet *net){
     int Transfer = 0;
     int unitwidth = 1;
     char warnstring[WARNSIZE];
-    SkipToNext(bf);    if (!TokenAvailable(bf,"CreateInput") && !TokenAvailable(bf,"CreateHidden") && !TokenAvailable(bf,"CreateOutput")) return 0;
-    if (AcceptToken(bf,     "CreateInput")) in_hid_out = 1;
-    else if (AcceptToken(bf,"CreateHidden")) in_hid_out = 2;
-    else if (AcceptToken(bf,"CreateOutput")) in_hid_out = 3;
+    SkipToNext(bf, config);    if (!TokenAvailable(bf,"CreateInput") && !TokenAvailable(bf,"CreateHidden") && !TokenAvailable(bf,"CreateOutput")) return (0);
+    if (AcceptToken(bf, config,    "CreateInput")) in_hid_out = 1;
+    else if (AcceptToken(bf, config, "CreateHidden")) in_hid_out = 2;
+    else if (AcceptToken(bf, config, "CreateOutput")) in_hid_out = 3;
     else assert (1 == 0); // unhandled case.
-    SkipToNext(bf);    if (!AcceptToken(bf, "(")) ErrStopParsing(bf, "Expected Open Parenthesis",NULL);
-    SkipToNext(bf);    if (!NumberAvailable(bf)) ErrStopParsing(bf, "First argument of a node creation statement must be an integer.",NULL);
-    NumToCreate = ReadInteger(bf);
+    SkipToNext(bf, config);    if (!AcceptToken(bf, config, "(")) ErrStopParsing(bf, "Expected Open Parenthesis",NULL);
+    SkipToNext(bf, config);    if (!NumberAvailable(bf)) ErrStopParsing(bf, "First argument of a node creation statement must be an integer.",NULL);
+    NumToCreate = ReadInteger(bf, config);
     if (NumToCreate <= 0) ErrStopParsing(bf, "It doesn't make sense to create less than one node.", NULL);
-    SkipToNext(bf);    if (!AcceptToken(bf,",")) ErrStopParsing(bf, "Expected comma between arguments.",NULL);SkipToNext(bf);
-    for (Accum = 0; Accum < ACCUMCOUNT && !AcceptToken(bf, acctokens[Accum]); Accum++);
+    SkipToNext(bf, config);    if (!AcceptToken(bf, config, ",")) ErrStopParsing(bf, "Expected comma between arguments.",NULL);SkipToNext(bf, config);
+    for (Accum = 0; Accum < ACCUMCOUNT && !AcceptToken(bf, config, acctokens[Accum]); Accum++);
     if (Accum == ACCUMCOUNT){
 	int ct = 0; int printed = snprintf(warnstring, WARNSIZE,"Expected the name of an accumulator function:");
 	for (ct = 0; ct < ACCUMCOUNT && printed + strlen(acctokens[ct])+5 < WARNSIZE; ct++)
@@ -914,8 +927,8 @@ int ReadCreateNodeStmt(struct slidingbuffer *bf, struct nnet *net){
 	assert (ct == ACCUMCOUNT); // if it's not we didn't have enough space in warnstring for the names of our input functions.
 	ErrStopParsing(bf, warnstring, NULL);
     }
-    SkipToNext(bf); if (!AcceptToken(bf,",")) ErrStopParsing(bf, "Expected comma between arguments.",NULL);
-    SkipToNext(bf); for (Transfer = 0; Transfer < OUTPUTCOUNT && !AcceptToken(bf, outtokens[Transfer]); Transfer++);
+    SkipToNext(bf, config); if (!AcceptToken(bf, config, ",")) ErrStopParsing(bf, "Expected comma between arguments.",NULL);
+    SkipToNext(bf, config); for (Transfer = 0; Transfer < OUTPUTCOUNT && !AcceptToken(bf, config, outtokens[Transfer]); Transfer++);
     if (Transfer == OUTPUTCOUNT){
 	int ct = 0; int printed = snprintf(warnstring, WARNSIZE,"Expected the name of an activation function:");
 	for (ct = 0; ct < OUTPUTCOUNT && printed + strlen(outtokens[ct])+5 < WARNSIZE; ct++)
@@ -925,22 +938,22 @@ int ReadCreateNodeStmt(struct slidingbuffer *bf, struct nnet *net){
 	ErrStopParsing(bf,warnstring,NULL);
     }
     if (Transfer >= SINGLEOUTPUTS){
-	if (!AcceptToken(bf,","))
+	if (!AcceptToken(bf, config, ","))
 	    ErrStopParsing(bf, "Expected comma between arguments.  Parallel activation functions require the unit width in nodes as a fourth argument.",NULL);
-	SkipToNext(bf);   if (!NumberAvailable(bf)) ErrStopParsing(bf, "Expected Integer.",NULL);
-	unitwidth = ReadInteger(bf);	SkipToNext(bf);
+	SkipToNext(bf, config);   if (!NumberAvailable(bf)) ErrStopParsing(bf, "Expected Integer.",NULL);
+	unitwidth = ReadInteger(bf, config);     SkipToNext(bf, config);
     }
-    SkipToNext(bf); if (!AcceptToken(bf, ")")) ErrStopParsing(bf, "Expected Close Parenthesis",NULL);
+    SkipToNext(bf, config); if (!AcceptToken(bf, config, ")")) ErrStopParsing(bf, "Expected Close Parenthesis",NULL);
     switch(in_hid_out){
     case 1: AddInputNodes(net, NumToCreate, Transfer, Accum, unitwidth );
-	if (net->nodecount > net->inputcount){
+	if ((config->flags & SILENCE_RENUMBER) != 0 && net->nodecount > net->inputcount){
 	    snprintf(warnstring, WARNSIZE,  "Warning: New Input nodes are numbered %d to %d.  Existing hidden and output nodes have been renumbered %d to %d.",
 		     net->inputcount - NumToCreate, net->inputcount-1, net->inputcount, net->nodecount-1);
 	    AddWarning(bf,warnstring);
 	}
 	break;
     case 2: AddHiddenNodes(net, NumToCreate, Transfer, Accum, unitwidth);
-	if (net->outputcount > 0){
+	if ( (config->flags & SILENCE_RENUMBER) != 0 && net->outputcount > 0){
 	    snprintf(warnstring, WARNSIZE, "Warning: New Hidden nodes are numbered %d to %d.  Existing output nodes have been renumbered %d to %d.",
 		    net->nodecount-net->outputcount-NumToCreate, net->nodecount-net->outputcount-1, net->nodecount-net->outputcount, net->nodecount-1 );
 	    AddWarning(bf,warnstring);
@@ -952,31 +965,31 @@ int ReadCreateNodeStmt(struct slidingbuffer *bf, struct nnet *net){
     return (1);
 }
 
-int ReadConnectStmt(struct slidingbuffer *bf, struct nnet *net){
+int ReadConnectStmt(struct slidingbuffer *bf, struct conf *config, struct nnet *net){
     assert(bf != NULL); assert (net != NULL);
     int firstlow;             int secondlow;
     int firsthigh;            int secondhigh;
     double weight = 0.0;      int imm_rnd_matrix = 0;
     int weightcount = 0;      double *weightlist = NULL;
-    SkipToNext(bf);     if (!AcceptToken(bf,"Connect")) return 0;
-    SkipToNext(bf);     if (!AcceptToken(bf, "(")) ErrStopParsing(bf,"Expected Open Parenthesis",NULL);
-    SkipToNext(bf);     if (TokenAvailable(bf,"{"))	ReadIntSpan(bf, &firstlow, &firsthigh);
-    else if (NumberAvailable(bf)) firstlow = firsthigh = ReadInteger(bf);
+    SkipToNext(bf, config);     if (!AcceptToken(bf, config, "Connect")) return (0);
+    SkipToNext(bf, config);     if (!AcceptToken(bf, config, "(")) ErrStopParsing(bf,"Expected Open Parenthesis",NULL);
+    SkipToNext(bf, config);     if (TokenAvailable(bf,"{"))	ReadIntSpan(bf, config, &firstlow, &firsthigh);
+    else if (NumberAvailable(bf)) firstlow = firsthigh = ReadInteger(bf, config);
     else ErrStopParsing(bf,"Expected Integer or '{'.", NULL);
-    SkipToNext(bf);     if (TokenAvailable(bf,"{")) ReadIntSpan(bf, &secondlow, &secondhigh);
-    else if (NumberAvailable(bf)) secondlow = secondhigh = ReadInteger(bf);
+    SkipToNext(bf, config);     if (TokenAvailable(bf,"{")) ReadIntSpan(bf, config, &secondlow, &secondhigh);
+    else if (NumberAvailable(bf)) secondlow = secondhigh = ReadInteger(bf, config);
     else ErrStopParsing(bf,"Expected Integer or '{'.", NULL);
-    SkipToNext(bf);     if (NumberAvailable(bf)) weight = ReadFloatingPoint(bf);
-    else if (AcceptToken(bf,"Randomize")) imm_rnd_matrix = 1;
+    SkipToNext(bf, config);     if (NumberAvailable(bf)) weight = ReadFloatingPoint(bf, config);
+    else if (AcceptToken(bf, config, "Randomize")) imm_rnd_matrix = 1;
     else if (TokenAvailable(bf,"[")){
 	weightcount = (1 + firsthigh - firstlow) * (1 + secondhigh - secondlow);
 	weightlist = (double *) malloc(sizeof(double) * weightcount);
 	if (weightlist == NULL) ErrStopParsing(bf,"Runtime error: allocation failure in ReadConnectStmt.",NULL);
 	imm_rnd_matrix = 2;
-	ReadWeightMatrix(bf, weightlist, weightcount);
+	ReadWeightMatrix(bf, config, weightlist, weightcount);
     }
     else ErrStopParsing(bf, "Expected floating point value, 'Randomize', or '['",NULL);
-    SkipToNext(bf);    if (!AcceptToken(bf,")")) ErrStopParsing(bf, "Expected Close Parenthesis", weightlist);
+    SkipToNext(bf, config);    if (!AcceptToken(bf, config, ")")) ErrStopParsing(bf, "Expected Close Parenthesis", weightlist);
     if (firstlow < 0 || secondlow < 0) ErrStopParsing(bf, "Connect Statement contains negative node ID.", weightlist);
     if (secondlow == 0) ErrStopParsing(bf,"Connect Statement names bias node as destination.", weightlist);
     if (firsthigh >= net->nodecount || secondhigh >= net->nodecount)
@@ -995,7 +1008,7 @@ int ReadConnectStmt(struct slidingbuffer *bf, struct nnet *net){
 // an opening comment from the nnet file is to be preserved and written back to the output file.  Aside from people putting project notes into the source file
 // and notes on how to connect it etc, this should allow for the preservation of a "shebang" line invoking nnet as a script handler on an executable output
 // file. We don't want to confuse the line/column counts for subsequent error messages, so no bypassing AcceptCh with the 'obvious' fgets or getline call.
-void ReadOpeningComment(struct conf *config, struct slidingbuffer *bf){
+void ReadOpeningComment(struct slidingbuffer *bf, struct conf *config){
 
     assert(config != NULL); assert (bf != NULL);
     size_t index = 0; size_t allocsize = 240;
@@ -1008,7 +1021,7 @@ void ReadOpeningComment(struct conf *config, struct slidingbuffer *bf){
 
     while (TokenAvailable(bf, "#")){
 	while('\n' != (ch2Add = NextCh(bf))){
-	    AcceptCh(bf, 1);
+	    AcceptCh(bf, config, 1);
 	    if (allocsize <= index+2){
 		allocsize = 2*allocsize; config->openingcomment = realloc(config->openingcomment, allocsize);
 		if (config->openingcomment == NULL){fprintf(stderr,"allocation failure.\n");exit(1);}
@@ -1022,8 +1035,46 @@ void ReadOpeningComment(struct conf *config, struct slidingbuffer *bf){
     if (checkval != NULL) config->openingcomment = checkval; // existing pointer value. It's not an allocation failure because we don't need to read more.
 }
 
-// Header: Project name, date, savefile, autosave intervals, source file, writeback file, noisy option, directions of which warnings to not report, etc.
-void ReadHeader(struct nnet *net, struct conf *config, struct slidingbuffer *bf){ //TODO
+
+int ReadSilenceStatement(struct slidingbuffer *bf, struct conf *config){
+    if (!AcceptToken(bf, config, "Silence")) return(0);
+    SkipToNext(bf, config); if (!AcceptToken(bf, config, "(")) ErrStopParsing(bf, "Silence statements must be followed by '('",NULL);
+    while (1 == 1){  // loop exit is via return statement or ErrStopParsing call.
+	SkipToNext(bf, config);
+	if (AcceptToken(bf, config, "Bias"))                 config->flags |= SILENCE_BIAS;
+	else if (AcceptToken(bf, config, "Debug"))           config->flags |= SILENCE_DEBUG;
+	else if (AcceptToken(bf, config, "Echo"))            config->flags |= SILENCE_ECHO;
+	else if (AcceptToken(bf, config, "Input"))           config->flags |= SILENCE_INPUT;
+	else if (AcceptToken(bf, config, "Output"))          config->flags |= SILENCE_OUTPUT;
+	else if (AcceptToken(bf, config, "NodeInput"))       config->flags |= SILENCE_NODEINPUT;
+	else if (AcceptToken(bf, config, "NodeOutput"))      config->flags |= SILENCE_NODEOUTPUT;
+	else if (AcceptToken(bf, config, "MultiActivation")) config->flags |= SILENCE_MULTIACTIVATION;
+	else if (AcceptToken(bf, config, "Recurrence"))      config->flags |= SILENCE_RECURRENCE;
+	else if (AcceptToken(bf, config, "Renumber"))        config->flags |= SILENCE_RENUMBER;
+	else ErrStopParsing
+		 (bf,"Unknown argument.  Arguments are Bias, Debug, Echo, Input, Output, NodeInput, NodeOutput, MultiActivation, Recurrence, and Renumber.",NULL);
+	SkipToNext(bf, config);
+	if (!TokenAvailable(bf, ",") && !TokenAvailable(bf,")")) ErrStopParsing(bf, "Silence Statements must have commas between arguments, or end with ')'.",NULL);
+	if (AcceptToken(bf, config, ")")) return(1);
+	else AcceptToken(bf, config, ",");
+    }
+}
+
+int ReadSaveStatement(struct slidingbuffer *bf, struct conf *config){
+    return(0);  // TODO.
+    //    if (NumberAvailable(bf)) config->saves = ReadInteger(bf, config);
+
+}
+
+// Silence statements
+// Save("string"), Save(Serialize),Save(#intermediate savefiles);
+int ReadConfigSection(struct slidingbuffer *bf, struct conf *config, struct nnet *net){
+    assert(net != NULL); assert(config != NULL); assert (bf != NULL);
+    SkipToNext(bf, config); if (!AcceptToken(bf, config, "StartConfig")) return (0);
+    SkipToNext(bf, config);
+    while (ReadSilenceStatement(bf, config) || ReadSaveStatement(bf,config)) SkipToNext(bf, config);
+    if(!AcceptToken(bf, config, "EndConfig")) ErrStopParsing(bf,"Expected 'Silence', 'Save', or 'EndConfig'", NULL);
+    return(1);
 }
 
 // Error function, learning algorithm, algorithm parameters or parameters schedule, minibatch size, epoch size, maxEpochs, maxAccuracy, maxDivergence (between
@@ -1037,55 +1088,93 @@ void ReadDataSection(){} //TODO
 
 
 // Node definition statements, until 'EndNodes'
-int ReadNodeSection(struct slidingbuffer *bf, struct nnet *net){
+int ReadNodeSection(struct slidingbuffer *bf, struct conf *config, struct nnet *net){
     assert(bf != NULL); assert (net != NULL);
-    SkipToNext(bf);    if (!AcceptToken(bf, "StartNodes"))return (0);
+    SkipToNext(bf, config);    if (!AcceptToken(bf, config, "StartNodes"))return (0);
     if (net->nodecount != 0) ErrStopParsing(bf, "Only one Node Definition section is allowed in a configuration file.",NULL);
-    if (ReadCreateNodeStmt(bf,net)) while (ReadCreateNodeStmt(bf, net));
+    if (ReadCreateNodeStmt(bf, config, net)) while (ReadCreateNodeStmt(bf, config, net));
     else ErrStopParsing(bf, "No node definitions found. Expected 'CreateInput','CreateHidden' or 'CreateOutput'.",NULL);
-    SkipToNext(bf);    if (!AcceptToken(bf, "EndNodes"))ErrStopParsing(bf,"Expected 'EndNodes' terminator after Node Definition section.",NULL);
+    SkipToNext(bf, config);    if (!AcceptToken(bf, config, "EndNodes"))ErrStopParsing(bf,"Expected 'EndNodes' terminator after Node Definition section.",NULL);
     if (net->nodecount == 0) ErrStopParsing(bf, "\nNo nodes created.",NULL);
     return (1);
 }
 
-// Check at end of connections and add warning messages for questionable topology.    TODO: suppress these warnings/errors with a header statement.
-int ValidateConnections(struct slidingbuffer *bf, struct nnet *net){
+
+// Check at end of connections and add warning messages for questionable topology.
+
+ int ValidateConnections(struct slidingbuffer *bf, struct conf *config, struct nnet *net){
     assert(bf != NULL); assert (net != NULL);
     int indexconn = 0;    int indexnode = 1;  char wstr[WARNSIZE];
-    while (net->sources[indexconn] != 0 && indexconn++ < net->synapsecount);
-    if (indexconn == net->synapsecount)
-	AddWarning(bf, "Warning:  Are you sure you wanted to define a network with no bias connections (connections with source 0)?");
-    for (indexnode = 1; indexnode < net->nodecount - net->outputcount; indexnode++){
-	for (indexconn = 0; indexconn < net->synapsecount && net->sources[indexconn] != indexnode; indexconn++);
-	if (indexconn == net->synapsecount){
-	    if (indexnode <= net->inputcount)snprintf(wstr, WARNSIZE, "Warning: node %d is an input node but does not send any signals.", indexnode);
-	    else snprintf(wstr,WARNSIZE, "Warning: node %d is a hidden node that does not send any signals.",indexnode);
-	    AddWarning(bf, wstr);}
+    if ((config->flags & SILENCE_BIAS) == 0){
+	while (net->sources[indexconn] == 0 && indexconn++ < net->synapsecount);
+	if (indexconn == net->synapsecount) AddWarning(bf, "Warning:  Are you sure you wanted to define a network with no bias connections (connections with source 0)?");
+	for (indexconn = 0; indexconn < net->synapsecount && net->dests[indexconn] != 0; indexconn++);
+	if (indexconn != net->synapsecount) AddWarning(bf, "Warning: Connections whose destination is the bias node (node zero) are being ignored.");
     }
-    for (indexnode = net->inputcount+1; indexnode < net->nodecount; indexnode++){
-	for (indexconn = 0; indexconn < net->synapsecount && net->dests[indexconn] != indexnode; indexconn++);
-	if (indexconn == net->synapsecount){
-	    if (indexnode >= net->nodecount - net->outputcount)
-		snprintf(wstr,WARNSIZE,"Warning: node %d is an output node but does not receive any signals.", indexnode);
-	    else snprintf(wstr,WARNSIZE,"Warning: node %d is a hidden node that does not receive any signals.",indexnode);
-	    AddWarning(bf,wstr);}
+    if ((config->flags & SILENCE_NODEOUTPUT) == 0)
+	for (indexnode = 1; indexnode < net->nodecount - net->outputcount; indexnode++){
+	    for (indexconn = 0; indexconn < net->synapsecount && net->sources[indexconn] != indexnode; indexconn++);
+	    if (indexconn == net->synapsecount){
+		if (indexnode <= net->inputcount)snprintf(wstr, WARNSIZE, "Warning: node %d is an input node but does not send any signals.", indexnode);
+		else snprintf(wstr,WARNSIZE, "Warning: node %d is a hidden node that does not send any signals.",indexnode);
+		AddWarning(bf, wstr);}
+	}
+    if ((config->flags & SILENCE_NODEINPUT) == 0)
+	for (indexnode = net->inputcount+1; indexnode < net->nodecount; indexnode++){
+	    for (indexconn = 0; indexconn < net->synapsecount && net->dests[indexconn] != indexnode; indexconn++);
+	    if (indexconn == net->synapsecount){
+		if (indexnode >= net->nodecount - net->outputcount)
+		    snprintf(wstr,WARNSIZE,"Warning: node %d is an output node but does not receive any signals.", indexnode);
+		else snprintf(wstr,WARNSIZE,"Warning: node %d is a hidden node that does not receive any signals.",indexnode);
+		AddWarning(bf,wstr);}
+	}
+    if ((config->flags & SILENCE_OUTPUT) == 0 && net->outputcount == 0)	AddWarning(bf, "Warning: the network as defined has no output nodes.");
+    if ((config->flags & SILENCE_INPUT) == 0 && net->inputcount == 0)	AddWarning(bf, "Warning: the network as defined has no input nodes.");
+    if ((config->flags & SILENCE_MULTIACTIVATION) == 0 || (config->flags & SILENCE_RECURRENCE) == 0){
+	int *checkbuf = calloc(net->nodecount, sizeof(int));
+	// checbuf meanings = 0: no use yet recorded.  1: recorded as dest only.  2: recorded as dest then source.  3: recorded as source only.  4: recorded
+	// as source then dest. 5: recorded as dest then source then dest. 6: recorded as source then dest then source. 7: recorded as source / dest /
+	// source / dest OR dest / source / dest / source (multiactivation)
+	if (checkbuf != NULL){
+	    for (indexconn = 0; indexconn < net->synapsecount; indexconn++){
+		switch(checkbuf[net->sources[indexconn]]){
+		case 0: checkbuf[net->dests[indexconn]] = 3; break;             case 1: checkbuf[net->dests[indexconn]] = 2; break;
+		case 4: checkbuf[net->dests[indexconn]] = 6; break;             case 5: checkbuf[net->dests[indexconn]] = 7; break;
+		default: break;}
+		switch(checkbuf[net->dests[indexconn]]){
+		case 0: checkbuf[net->dests[indexconn]] = 1; break;              case 2: checkbuf[net->dests[indexconn]] = 5; break;
+		case 3: checkbuf[net->dests[indexconn]] = 4; break;              case 6: checkbuf[net->dests[indexconn]] = 7; break;
+		default: break;}
+	    }
+	    for (indexnode = 0; indexnode < net->nodecount; indexnode++){
+		if ((config->flags & SILENCE_MULTIACTIVATION) == 0 && checkbuf[indexnode] == 7){
+		    snprintf(wstr, WARNSIZE, "Warning: node %d will be activated more than once per activation sequence.", indexnode);
+		    AddWarning(bf, wstr);
+		}
+		if ((config->flags & SILENCE_RECURRENCE) == 0 && checkbuf[indexnode] >= 4){
+		    snprintf(wstr, WARNSIZE, "Warning: the network is recurrent because node %d saves signal across activation sequences.", indexnode);
+		    AddWarning(bf, wstr);
+		}
+		free(checkbuf);
+	    }
+	}
     }
-    return (1); // return value signals parse failure if 0. For now always returns 1.  TODO, optionally trigger topological reduction with it.
-}
+    return (1); // For now always returns 1.  TODO, maybe, a return code that indicates what topological reduction can be done on it.
+ }
 
 
 // Connection statements, until 'EndConnections'
-int ReadConnections(struct slidingbuffer *bf, struct nnet *net){
+int ReadConnections(struct slidingbuffer *bf, struct conf *config, struct nnet *net){
     assert(bf != NULL); assert (net != NULL);
-    SkipToNext(bf);
-    if (!AcceptToken(bf, "StartConnections")) return (0);
+    SkipToNext(bf, config);
+    if (!AcceptToken(bf, config, "StartConnections")) return (0);
     if (net->nodecount == 0) ErrStopParsing(bf, "Found 'StartConnections', expected 'StartNodes.' Nodes cannot be connected before they are defined.",NULL);
-    SkipToNext(bf);
-    if (ReadConnectStmt(bf,net))while (ReadConnectStmt(bf, net));else ErrStopParsing(bf, "No 'Connect' statement found.",NULL);
-    SkipToNext(bf);
-    if (!AcceptToken(bf, "EndConnections")) ErrStopParsing(bf,"Expected 'Connect' statement or 'EndConnections' terminator.",NULL);
+    SkipToNext(bf, config);
+    if (ReadConnectStmt(bf, config, net))while (ReadConnectStmt(bf, config, net));else ErrStopParsing(bf, "No 'Connect' statement found.",NULL);
+    SkipToNext(bf, config);
+    if (!AcceptToken(bf, config, "EndConnections")) ErrStopParsing(bf,"Expected 'Connect' statement or 'EndConnections' terminator.",NULL);
     if (net->synapsecount == 0) ErrStopParsing(bf, "No connections created.",NULL);
-    return ValidateConnections(bf,net);
+    return (ValidateConnections(bf, config, net));
 }
 
 // prints low-level information about network suitable for automated analysis via sed, etc.
@@ -1111,15 +1200,15 @@ void debugnnet(struct nnet *net){
 
 void nnetparser(struct nnet *net, struct conf *config, struct slidingbuffer *input){
     assert(net != NULL); assert(input != NULL);
-    ReadOpeningComment(config, input);
-    //    ReadHeader(net,config, input);
+    ReadOpeningComment(input, config);
     //    ReadTrainingSection(net,config, input);
     //    ReadDataSection(net,config,input);
-    SkipToNext(input);
-    if (!TokenAvailable(input, "StartNodes") && !TokenAvailable(input, "StartConnections"))
-	ErrStopParsing(input, "Expected 'StartNodes'  or 'StartConnections' statement.",NULL);
-    SkipToNext(input);
-    while (TokenAvailable(input, "StartNodes") || TokenAvailable(input, "StartConnections"))
-	if (!ReadNodeSection(input, net) && !ReadConnections(input,net))  ErrStopParsing(input, "Program Error in routine 'parser'. ",NULL);
-	else SkipToNext(input);
+    SkipToNext(input, config);
+    if (!TokenAvailable(input, "StartNodes") && !TokenAvailable(input, "StartConnections") && !TokenAvailable(input, "StartConfig"))
+	ErrStopParsing(input, "Expected 'StartConfig', 'StartNodes' or 'StartConnections' statement.",NULL);
+    SkipToNext(input, config);
+    while (TokenAvailable(input, "StartConfig") || TokenAvailable(input, "StartNodes") || TokenAvailable(input, "StartConnections"))
+	if (!ReadNodeSection(input, config, net) && !ReadConnections(input, config, net) && !ReadConfigSection(input, config, net))
+	    ErrStopParsing(input, "Program Error in routine 'parser'. ",NULL);
+	else SkipToNext(input, config);
 }
