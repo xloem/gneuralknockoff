@@ -71,6 +71,7 @@ struct conf{
     char *openingcomment;
     unsigned int flags;
     unsigned int serialnum;
+    unsigned int savecount;
     char *savename;
 };
 

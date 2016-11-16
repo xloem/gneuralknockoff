@@ -839,7 +839,6 @@ int ReadInteger(struct slidingbuffer *bf, struct conf *config){
     return( (1-(2*negate)) * atoi(buf));
 }
 
-
 // Read and return the number.  Controlled fail with helpful message if none available or wrong syntax.  You must call 'NumberAvailable' first.
 double ReadFloatingPoint(struct slidingbuffer *bf, struct conf *config){
     assert(bf != NULL);    assert(NumberAvailable(bf));
@@ -899,7 +898,34 @@ int ReadWeightMatrix(struct slidingbuffer *bf, struct conf *config, double *targ
     return (1);
 }
 
+
+// reads a quoted string with c-style control-character escapes.
+int ReadQuotedString(struct slidingbuffer *bf, struct conf *config, char **retstring){
+    assert(bf != NULL); assert(config != NULL);
+    int allocsize = 0; char *retval = NULL;  *retstring = NULL;
+    if (!AcceptToken(bf, config, "\"")) return (0);
+    for (int index = 0; 1 == 1; index++){
+	if (!ChAvailable(bf,1)) ErrStopParsing(bf, "While reading a string, reached end of input without finding a closing quote.", retval);
+	if (index + 3 >= allocsize){allocsize = MAX(allocsize * 2, 256); retval = (char*)realloc(retval, allocsize * sizeof(char));
+	    if (retval == NULL) ErrStopParsing(bf, "Runtime Error: Allocation Failure in ReadQuotedString", retval);}
+	if (AcceptToken(bf, config, "\"")){retval[index++] = '\0'; *retstring = realloc(retval, index*sizeof(char)); return(1);}
+	else if (ChAvailable(bf,2) && AcceptToken(bf, config, "\\")){ // handle c-style escapes
+	    if (AcceptToken(bf, config, "b")) retval[index++] = '\b';
+	    else if (AcceptToken(bf, config, "f"))  retval[index++] = '\f';
+	    else if (AcceptToken(bf, config, "n"))  retval[index++] = '\n';
+	    else if (AcceptToken(bf, config, "r"))  retval[index++] = '\r';
+	    else if (AcceptToken(bf, config, "t"))  retval[index++] = '\t';
+	    else if (AcceptToken(bf, config, "v"))  retval[index++] = '\v';
+	    else if (AcceptToken(bf, config, "\\")) retval[index++] = '\\';
+	    else if (isspace(NextCh(bf))) SkipWhiteSpace(bf, config);  // backslash-whitespace eats any amount of whitespace (for return and indentation)
+	}
+	else {retval[index++] = NextCh(bf); AcceptCh(bf, config, 1);}
+    }
+    assert(1 == 0); // This Never Happens: the above for loop should never exit at bottom.
+}
+
 #define WARNSIZE 256
+
 int ReadCreateNodeStmt(struct slidingbuffer *bf, struct conf *config, struct nnet *net){
     assert(bf != NULL); assert (net != NULL);
     int in_hid_out = 0;
@@ -1060,10 +1086,23 @@ int ReadSilenceStatement(struct slidingbuffer *bf, struct conf *config){
     }
 }
 
-int ReadSaveStatement(struct slidingbuffer *bf, struct conf *config){
-    return(0);  // TODO.
-    //    if (NumberAvailable(bf)) config->saves = ReadInteger(bf, config);
+// semantics of save arguments:  <Integer>: make 1 save per epoch or this many equally-distributed saves whichever's less.
+// <String>: a string in quotes gives the (non-serialized) output filename.  in this case the ".out" extension is not used and serial number (plus a period)
+// goes after the last period in the string.
+// Serialize: insert a serial number into the savefile filenames.  Serial numbers start with any serial# in the input filename, or 0 if none.
 
+int ReadSaveStatement(struct slidingbuffer *bf, struct conf *config){
+    char *fname = NULL;
+    if (!AcceptToken(bf, config, "Save")) return(0);
+    SkipToNext(bf, config); if (!AcceptToken(bf, config, "(")) ErrStopParsing(bf, "Save Statements must be followed by '('", NULL);
+    while (1 == 1){
+	SkipToNext(bf, config);
+	if (AcceptToken(bf, config, ")"))                   return (1);
+	else if (AcceptToken(bf, config, "Serialize"))      config->flags |= SAVE_SERIALIZE;
+	else if (ReadQuotedString(bf,config, &fname))       config->savename = fname;
+	else if (NumberAvailable(bf))                       config->savecount = ReadInteger(bf,config);
+	else ErrStopParsing(bf, "Save statement arguments can be the keyword 'Serialize', a count of saves to make, or filenames(in quotes).", fname);
+    }
 }
 
 // Silence statements
@@ -1177,7 +1216,7 @@ int ReadConnections(struct slidingbuffer *bf, struct conf *config, struct nnet *
     return (ValidateConnections(bf, config, net));
 }
 
-// prints low-level information about network suitable for automated analysis via sed, etc.
+// prints low-level information about network suitable for automated analysis/modification via sed, etc.
 void debugnnet(struct nnet *net){
     assert(net != NULL);
     int count;
