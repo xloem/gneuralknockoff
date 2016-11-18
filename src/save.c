@@ -150,22 +150,22 @@ void nnetwriter(struct nnet *net, struct conf *config, FILE *out){
                           SILENCE_NODEOUTPUT | SILENCE_MULTIACTIVATION | SILENCE_RECURRENCE | SILENCE_RENUMBER)) != 0){
         fprintf(out, "   Silence("); // Bias, Debug, Echo, Input, Output, NodeInput, NodeOutput, MultiActivation, Renumber
         for (maxbit = SILENCE_RENUMBER; (config->flags & maxbit) == 0; maxbit >>= 1);
-        if ((config->flags & SILENCE_BIAS) != 0)            fprintf(out, "Bias");
-        if (maxbit == SILENCE_BIAS)                         fprintf(out, ")\n");              else fprintf(out, ", ");
-        if ((config->flags & SILENCE_DEBUG) != 0)           fprintf(out, "Debug");
-        if (maxbit == SILENCE_DEBUG)                        fprintf(out, ")\n");              else fprintf(out, ", ");
-        if ((config->flags & SILENCE_ECHO) != 0)            fprintf(out, "Echo");
-        if (maxbit == SILENCE_ECHO)                         fprintf(out, ")\n");              else fprintf(out, ", ");
-        if ((config->flags & SILENCE_INPUT) != 0)           fprintf(out, "Input");
-        if (maxbit == SILENCE_INPUT)                        fprintf(out, ")\n");              else fprintf(out, ", ");
-        if ((config->flags & SILENCE_OUTPUT) != 0)          fprintf(out, "Output");
-        if (maxbit == SILENCE_OUTPUT)                       fprintf(out, ")\n");              else fprintf(out, ", ");
-        if ((config->flags & SILENCE_NODEINPUT) != 0)       fprintf(out, "NodeInput");
-        if (maxbit == SILENCE_NODEINPUT)                    fprintf(out, ")\n");              else fprintf(out, ", ");
-        if ((config->flags & SILENCE_NODEOUTPUT) != 0)      fprintf(out, "NodeOutput");
-        if (maxbit == SILENCE_NODEOUTPUT)                   fprintf(out, ")\n");              else fprintf(out, ", ");
-        if ((config->flags & SILENCE_MULTIACTIVATION) != 0) fprintf(out, "MultiActivation");
-        if (maxbit == SILENCE_MULTIACTIVATION)              fprintf(out, ")\n");              else fprintf(out, ", ");
+        if ((config->flags & SILENCE_BIAS) != 0){           fprintf(out, "Bias");
+            if (maxbit == SILENCE_BIAS)                     fprintf(out, ")\n");              else fprintf(out, ", ");}
+        if ((config->flags & SILENCE_DEBUG) != 0){          fprintf(out, "Debug");
+            if (maxbit == SILENCE_DEBUG)                    fprintf(out, ")\n");              else fprintf(out, ", ");}
+        if ((config->flags & SILENCE_ECHO) != 0){           fprintf(out, "Echo");
+            if (maxbit == SILENCE_ECHO)                     fprintf(out, ")\n");              else fprintf(out, ", ");}
+        if ((config->flags & SILENCE_INPUT) != 0){          fprintf(out, "Input");
+            if (maxbit == SILENCE_INPUT)                    fprintf(out, ")\n");              else fprintf(out, ", ");}
+        if ((config->flags & SILENCE_OUTPUT) != 0){         fprintf(out, "Output");
+            if (maxbit == SILENCE_OUTPUT)                   fprintf(out, ")\n");              else fprintf(out, ", ");}
+        if ((config->flags & SILENCE_NODEINPUT) != 0){      fprintf(out, "NodeInput");
+            if (maxbit == SILENCE_NODEINPUT)                fprintf(out, ")\n");              else fprintf(out, ", ");}
+        if ((config->flags & SILENCE_NODEOUTPUT) != 0){     fprintf(out, "NodeOutput");
+            if (maxbit == SILENCE_NODEOUTPUT)               fprintf(out, ")\n");              else fprintf(out, ", ");}
+        if ((config->flags & SILENCE_MULTIACTIVATION) != 0){fprintf(out, "MultiActivation");
+            if (maxbit == SILENCE_MULTIACTIVATION)          fprintf(out, ")\n");              else fprintf(out, ", ");}
         if ((config->flags & SILENCE_RENUMBER) != 0)        fprintf(out, "Renumber)\n");
     }
     fprintf(out,"   Save(");
