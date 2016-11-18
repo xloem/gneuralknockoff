@@ -97,6 +97,8 @@ enum optimization_method {
 #define SILENCE_RECURRENCE 0x100
 #define SILENCE_RENUMBER 0x200
 
+// flags for save configuration
+#define SAVE_SERIALIZE 0x400
 
 
 #define MANPAGE "\

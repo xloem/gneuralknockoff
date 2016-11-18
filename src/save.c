@@ -136,14 +136,42 @@ void network_save_final_curve(network *nn, network_config *config)
 static const char* acctokens[ACCUMCOUNT] = {ACCTOKENS};
 static const char* outtokens[OUTPUTCOUNT] = {OUTTOKENS};
 
-// Netwriter produces a configfile that, when read by the parser, produces a network with the same topology, weights, and firing sequence of the network given
-// as an argument.  All three of these things can be changed by various kinds of training, and there are different ways of expressing even the same topology, so
-// this may be different from the way the configfile originally wrote it.
+// Nnetwriter produces a script that, when read by the parser, produces a network with the same configuration, topology, weights, and firing sequence of the
+// network given as an argument.  All three of these things can be changed by various kinds of training, and there are different ways of expressing even the
+// same topology, so this may be different from the way the configfile originally wrote it.
 void nnetwriter(struct nnet *net, struct conf *config, FILE *out){
     assert(net != NULL); assert (out != NULL);
     int start, end, width, acc, xfer;
+    unsigned int maxbit;
     if (config->openingcomment != NULL) fprintf(out, "%s", config->openingcomment);
     if (net->nodecount < 2) return;
+    fprintf(out, "StartConfig\n");
+    if ((config->flags & (SILENCE_BIAS | SILENCE_DEBUG | SILENCE_ECHO | SILENCE_INPUT | SILENCE_OUTPUT | SILENCE_NODEINPUT |
+                          SILENCE_NODEOUTPUT | SILENCE_MULTIACTIVATION | SILENCE_RECURRENCE | SILENCE_RENUMBER)) != 0){
+        fprintf(out, "   Silence("); // Bias, Debug, Echo, Input, Output, NodeInput, NodeOutput, MultiActivation, Renumber
+        for (maxbit = SILENCE_RENUMBER; (config->flags & maxbit) == 0; maxbit >>= 1);
+        if ((config->flags & SILENCE_BIAS) != 0)            fprintf(out, "Bias");
+        if (maxbit == SILENCE_BIAS)                         fprintf(out, ")\n");              else fprintf(out, ", ");
+        if ((config->flags & SILENCE_DEBUG) != 0)           fprintf(out, "Debug");
+        if (maxbit == SILENCE_DEBUG)                        fprintf(out, ")\n");              else fprintf(out, ", ");
+        if ((config->flags & SILENCE_ECHO) != 0)            fprintf(out, "Echo");
+        if (maxbit == SILENCE_ECHO)                         fprintf(out, ")\n");              else fprintf(out, ", ");
+        if ((config->flags & SILENCE_INPUT) != 0)           fprintf(out, "Input");
+        if (maxbit == SILENCE_INPUT)                        fprintf(out, ")\n");              else fprintf(out, ", ");
+        if ((config->flags & SILENCE_OUTPUT) != 0)          fprintf(out, "Output");
+        if (maxbit == SILENCE_OUTPUT)                       fprintf(out, ")\n");              else fprintf(out, ", ");
+        if ((config->flags & SILENCE_NODEINPUT) != 0)       fprintf(out, "NodeInput");
+        if (maxbit == SILENCE_NODEINPUT)                    fprintf(out, ")\n");              else fprintf(out, ", ");
+        if ((config->flags & SILENCE_NODEOUTPUT) != 0)      fprintf(out, "NodeOutput");
+        if (maxbit == SILENCE_NODEOUTPUT)                   fprintf(out, ")\n");              else fprintf(out, ", ");
+        if ((config->flags & SILENCE_MULTIACTIVATION) != 0) fprintf(out, "MultiActivation");
+        if (maxbit == SILENCE_MULTIACTIVATION)              fprintf(out, ")\n");              else fprintf(out, ", ");
+        if ((config->flags & SILENCE_RENUMBER) != 0)        fprintf(out, "Renumber)\n");
+    }
+    fprintf(out,"   Save(");
+    if ((config->flags & SAVE_SERIALIZE) !=0) fprintf(out, "Serialize, ");
+    if (config->savecount != 0)fprintf(out, "%d, ", config->savecount);
+    fprintf(out, "\"%s\")\nEndConfig\n", config->savename);
     end = start = 1;
     fprintf(out, "StartNodes\n");
     for (start = end=1; end < net->inputcount && end+1 < net->nodecount; start=++end){

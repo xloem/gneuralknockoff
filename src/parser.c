@@ -1141,7 +1141,7 @@ int ReadNodeSection(struct slidingbuffer *bf, struct conf *config, struct nnet *
 
 // Check at end of connections and add warning messages for questionable topology.
 
- int ValidateConnections(struct slidingbuffer *bf, struct conf *config, struct nnet *net){
+int ValidateConnections(struct slidingbuffer *bf, struct conf *config, struct nnet *net){
     assert(bf != NULL); assert (net != NULL);
     int indexconn = 0;    int indexnode = 1;  char wstr[WARNSIZE];
     if ((config->flags & SILENCE_BIAS) == 0){
@@ -1171,7 +1171,7 @@ int ReadNodeSection(struct slidingbuffer *bf, struct conf *config, struct nnet *
     if ((config->flags & SILENCE_INPUT) == 0 && net->inputcount == 0)	AddWarning(bf, "Warning: the network as defined has no input nodes.");
     if ((config->flags & SILENCE_MULTIACTIVATION) == 0 || (config->flags & SILENCE_RECURRENCE) == 0){
 	int *checkbuf = calloc(net->nodecount, sizeof(int));
-	// checbuf meanings = 0: no use yet recorded.  1: recorded as dest only.  2: recorded as dest then source.  3: recorded as source only.  4: recorded
+	// checkbuf meanings = 0: no use yet recorded.  1: recorded as dest only.  2: recorded as dest then source.  3: recorded as source only.  4: recorded
 	// as source then dest. 5: recorded as dest then source then dest. 6: recorded as source then dest then source. 7: recorded as source / dest /
 	// source / dest OR dest / source / dest / source (multiactivation)
 	if (checkbuf != NULL){
@@ -1186,16 +1186,16 @@ int ReadNodeSection(struct slidingbuffer *bf, struct conf *config, struct nnet *
 		default: break;}
 	    }
 	    for (indexnode = 0; indexnode < net->nodecount; indexnode++){
-		if ((config->flags & SILENCE_MULTIACTIVATION) == 0 && checkbuf[indexnode] == 7){
+		if((config->flags&SILENCE_MULTIACTIVATION)==0&&(checkbuf[indexnode]==7||(checkbuf[indexnode]>4&&indexnode>=net->nodecount-net->outputcount))){
 		    snprintf(wstr, WARNSIZE, "Warning: node %d will be activated more than once per activation sequence.", indexnode);
 		    AddWarning(bf, wstr);
 		}
-		if ((config->flags & SILENCE_RECURRENCE) == 0 && checkbuf[indexnode] >= 4){
+		if ((config->flags & SILENCE_RECURRENCE) == 0 && checkbuf[indexnode] >= 4 && indexnode < net->nodecount - net->outputcount){
 		    snprintf(wstr, WARNSIZE, "Warning: the network is recurrent because node %d saves signal across activation sequences.", indexnode);
 		    AddWarning(bf, wstr);
 		}
-		free(checkbuf);
 	    }
+            free(checkbuf);
 	}
     }
     return (1); // For now always returns 1.  TODO, maybe, a return code that indicates what topological reduction can be done on it.
@@ -1248,6 +1248,7 @@ void nnetparser(struct nnet *net, struct conf *config, struct slidingbuffer *inp
     SkipToNext(input, config);
     while (TokenAvailable(input, "StartConfig") || TokenAvailable(input, "StartNodes") || TokenAvailable(input, "StartConnections"))
 	if (!ReadNodeSection(input, config, net) && !ReadConnections(input, config, net) && !ReadConfigSection(input, config, net))
-	    ErrStopParsing(input, "Program Error in routine 'parser'. ",NULL);
+	    ErrStopParsing(input, "Program Error in routine 'nnetparser'. ",NULL);
 	else SkipToNext(input, config);
+    printf("\n");
 }
