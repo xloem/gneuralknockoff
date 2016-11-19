@@ -149,7 +149,7 @@ void nnetwriter(struct nnet *net, struct conf *config, FILE *out){
     if ((config->flags & (SILENCE_BIAS | SILENCE_DEBUG | SILENCE_ECHO | SILENCE_INPUT | SILENCE_OUTPUT | SILENCE_NODEINPUT |
                           SILENCE_NODEOUTPUT | SILENCE_MULTIACTIVATION | SILENCE_RECURRENCE | SILENCE_RENUMBER)) != 0){
         fprintf(out, "   Silence("); // Bias, Debug, Echo, Input, Output, NodeInput, NodeOutput, MultiActivation, Renumber
-        for (maxbit = SILENCE_RENUMBER; (config->flags & maxbit) == 0; maxbit >>= 1);
+        for (maxbit = 0x1; (config->flags & maxbit) == 0 && maxbit != 0; maxbit <<= 1);
         if ((config->flags & SILENCE_BIAS) != 0){           fprintf(out, "Bias");
             if (maxbit == SILENCE_BIAS)                     fprintf(out, ")\n");              else fprintf(out, ", ");}
         if ((config->flags & SILENCE_DEBUG) != 0){          fprintf(out, "Debug");
