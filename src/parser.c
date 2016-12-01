@@ -840,7 +840,7 @@ int ReadInteger(struct slidingbuffer *bf, struct conf *config){
 }
 
 // Read and return the number.  Controlled fail with helpful message if none available or wrong syntax.  You must call 'NumberAvailable' first.
-double ReadFloatingPoint(struct slidingbuffer *bf, struct conf *config){
+flotype ReadFloatingPoint(struct slidingbuffer *bf, struct conf *config){
     assert(bf != NULL);    assert(NumberAvailable(bf));
     static const int maxlen = 1085; // max decimal length for (negative, denormalized, 64-bit) double is 1079!!  That's CRAZY!
     char buf[maxlen]; int count = 0; int before = 0; int after = 0;
@@ -864,7 +864,7 @@ double ReadFloatingPoint(struct slidingbuffer *bf, struct conf *config){
     double retval = atof(buf);
     if (retval == 0.0 && non0digits != 0) ErrStopParsing(bf,"Nonzero float in source was rounded to zero on read.",NULL);
     if (retval == HUGE_VAL) ErrStopParsing(bf,"Float value in source exceeds float range.",NULL);
-    return(retval);
+    return((flotype)retval);
 }
 
 
@@ -883,7 +883,7 @@ int ReadIntSpan(struct slidingbuffer *bf, struct conf *config, int *start, int *
 
 
 // read a weight matrix.  Return 0 for failure, 1 for success
-int ReadWeightMatrix(struct slidingbuffer *bf, struct conf *config, double *target, int size){
+int ReadWeightMatrix(struct slidingbuffer *bf, struct conf *config, flotype *target, int size){
     assert(bf != NULL); assert (target != NULL); assert (size > 0);
     int index;
     SkipToNext(bf, config); if (!AcceptToken(bf, config, "[")) return (0);
@@ -995,8 +995,8 @@ int ReadConnectStmt(struct slidingbuffer *bf, struct conf *config, struct nnet *
     assert(bf != NULL); assert (net != NULL);
     int firstlow;             int secondlow;
     int firsthigh;            int secondhigh;
-    double weight = 0.0;      int imm_rnd_matrix = 0;
-    int weightcount = 0;      double *weightlist = NULL;
+    flotype weight = ZERO;    int imm_rnd_matrix = 0;
+    int weightcount = 0;      flotype *weightlist = NULL;
     SkipToNext(bf, config);     if (!AcceptToken(bf, config, "Connect")) return (0);
     SkipToNext(bf, config);     if (!AcceptToken(bf, config, "(")) ErrStopParsing(bf,"Expected Open Parenthesis",NULL);
     SkipToNext(bf, config);     if (TokenAvailable(bf,"{"))	ReadIntSpan(bf, config, &firstlow, &firsthigh);
@@ -1009,7 +1009,7 @@ int ReadConnectStmt(struct slidingbuffer *bf, struct conf *config, struct nnet *
     else if (AcceptToken(bf, config, "Randomize")) imm_rnd_matrix = 1;
     else if (TokenAvailable(bf,"[")){
 	weightcount = (1 + firsthigh - firstlow) * (1 + secondhigh - secondlow);
-	weightlist = (double *) malloc(sizeof(double) * weightcount);
+	weightlist = (flotype *) malloc(sizeof(flotype) * weightcount);
 	if (weightlist == NULL) ErrStopParsing(bf,"Runtime error: allocation failure in ReadConnectStmt.",NULL);
 	imm_rnd_matrix = 2;
 	ReadWeightMatrix(bf, config, weightlist, weightcount);
@@ -1232,7 +1232,7 @@ void debugnnet(struct nnet *net){
     }
     printf("Connections\n");
     for (count = 0; count < net->synapsecount; count++)
-	printf("#%d:%d(x%.3f)->%d  ", count, net->sources[count], net->weights[count],net->dests[count]);
+	printf("#%d:%d(x"FLOFMT3")->%d  ", count, net->sources[count], net->weights[count],net->dests[count]);
     printf("\n");
 }
 

@@ -445,10 +445,10 @@ int AddOutputNodes(struct nnet *net, int newnodes, int transferfn, int accumfn, 
 }
 
 // inserts connections into an existing network.
-void AddConnections(struct nnet *net, int fromstart, int fromend, int tostart, int toend, double *weight){
+void AddConnections(struct nnet *net, int fromstart, int fromend, int tostart, int toend, flotype *weight){
     int wt = 0;
     int newcount = net->synapsecount + (1+fromend-fromstart) * (1+toend-tostart);
-    net->weights = (double *)realloc(net->weights, newcount * sizeof(double));
+    net->weights = (flotype *)realloc(net->weights, newcount * sizeof(flotype));
     net->sources = (unsigned int *)realloc(net->sources, newcount * sizeof(int));
     net->dests = (unsigned int *)realloc(net->dests, newcount * sizeof(int));
     if (net->weights == NULL || net->sources == NULL || net->dests == NULL) {printf("Runtime error: allocation failure in AddConnections.\n"); exit(1);}
@@ -464,7 +464,7 @@ void AddConnections(struct nnet *net, int fromstart, int fromend, int tostart, i
 void AddRandomizedConnections(struct nnet *net, int fromstart, int fromend, int tostart, int toend){
     int wt = 0;
     int newcount = net->synapsecount + (1+fromend-fromstart) * (1+toend-tostart);
-    net->weights = (double *)realloc(net->weights, newcount * sizeof(double));
+    net->weights = (flotype *)realloc(net->weights, newcount * sizeof(flotype));
     net->sources = (unsigned int *)realloc(net->sources, newcount * sizeof(int));
     net->dests = (unsigned int *)realloc(net->dests, newcount * sizeof(int));
     if (net->weights == NULL || net->sources == NULL || net->dests == NULL) {printf("Runtime error: Allocation failure in AddRandomizedConnections.\n"); exit(1);}
@@ -505,7 +505,7 @@ struct nnet *convertnetwork(struct _network *oldnet){
     for (layercount = 1; layercount < oldnet->num_of_layers; layercount++) // for loop counts non-bias connections in old network
 	for (neuroncount = 0; neuroncount < oldnet->layers[layercount].num_of_neurons; neuroncount++)
 	    newval->synapsecount += oldnet->layers[layercount].neurons[neuroncount].num_input;
-    newval->weights = (double *)malloc(newval->synapsecount * sizeof(double));
+    newval->weights = (flotype *)malloc(newval->synapsecount * sizeof(flotype));
     newval->sources = (unsigned int *)malloc(newval->synapsecount * sizeof(unsigned int));
     newval->dests = (unsigned int *)malloc(newval->synapsecount  * sizeof(unsigned int));
     newval->transfer = (enum activation_function *)malloc(sizeof(enum activation_function) * newval->nodecount);
@@ -520,16 +520,16 @@ struct nnet *convertnetwork(struct _network *oldnet){
 	    newval->accum[nodenum] = oldnet->layers[layercount].neurons[neuroncount].accumulator;
 	    newval->dests[synapsecount] = nodenum; 	    // add dest/source/weight for bias connection
 	    newval->sources[synapsecount] = 0;              // (old network format lacks bias connections)
-	    newval->weights[synapsecount++] = 0.0;          // initial bias weight is zero
+	    newval->weights[synapsecount++] = ZERO;         // initial bias weight is zero
 	    for (connectioncount = 0; connectioncount < oldnet->layers[layercount].neurons[neuroncount].num_input; connectioncount++){
 		newval->dests[synapsecount] = nodenum;
 		newval->sources[synapsecount] = oldnet->layers[layercount].neurons[neuroncount].connection[connectioncount]->global_id + 1;
-		newval->weights[synapsecount++] = oldnet->layers[layercount].neurons[neuroncount].w[connectioncount];
+		newval->weights[synapsecount++] = (flotype)(oldnet->layers[layercount].neurons[neuroncount].w[connectioncount]);
 	    }
 	}
     }
     // Traversal of old network gave us connections in sequence by destination; new format needs them in sequence by origin. so we sort.
-    double wtmp; unsigned int srctmp; unsigned int desttmp; unsigned int skipsize; unsigned int i1; unsigned int i2;
+    flotype wtmp; unsigned int srctmp; unsigned int desttmp; unsigned int skipsize; unsigned int i1; unsigned int i2;
     for (skipsize = (2 * --synapsecount) / 3; skipsize >= 1; skipsize = (2 * skipsize) / 3)
 	for (connectioncount = 0; connectioncount < synapsecount; connectioncount++){
 	    i1 = MIN (connectioncount, (connectioncount + skipsize) % synapsecount);

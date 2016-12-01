@@ -210,7 +210,7 @@ void genetic_algorithm(network *nn, network_config *config) {
  int nmax =   config->nmax;		/* number of generations */
  int npop =   config->npop;		/* number of individuals per generation */
  int rate =   config->rate;		/* rate of change between one generation and the parent */
- int eps  =   config->accuracy;		/* numerical accuracy */
+ double eps  =   config->accuracy;      /* numerical accuracy */
 
  int i,j,k,n;
 

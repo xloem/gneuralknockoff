@@ -61,7 +61,7 @@ struct nnet{
 			           // processing this node.  transfer width is assumed to be one if this is left NULL.
 			           // In wide transfers only the entry corresponding to the first node will be read.
     unsigned int synapsecount;     // this many connections (including bias) are used during one 'cycle' of the network.
-    double *weights;               // each synapse has its own weight.
+    flotype *weights;               // each synapse has its own weight.
     unsigned int *sources;         // each synapse has its own source (bias nodes are source zero).
     unsigned int *dests;           // each synapse has its own destination.
 };
@@ -114,7 +114,7 @@ struct nnet *convertnetwork(struct _network *);
 int AddHiddenNodes(struct nnet *, int, int, int, unsigned int);
 int AddInputNodes(struct nnet *, int, int, int, unsigned int);
 int AddOutputNodes(struct nnet *, int, int, int, unsigned int);
-void AddConnections(struct nnet *, int, int, int, int, double *);
+void AddConnections(struct nnet *, int, int, int, int, flotype *);
 void AddRandomizedConnections(struct nnet *, int, int, int, int);
 
 

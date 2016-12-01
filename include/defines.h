@@ -43,6 +43,25 @@
 // low limit for the genetic algorithm
 #define PAR_QSORT_LOW_LIMIT 1024
 
+// specifically for datafiles, weights, and activations. We want to be able to compile correctly for different size floats, on account of OMP and GPU
+// restrictions.
+typedef double flotype;
+
+// FLOFMT is human-readable but preserves all bits (for scripts); FLOFMT3 is for human-readable (output).
+#define FLOFMT "%.15g"
+#define FLOFMT3 "%.3g"
+
+#define ZERO ((flotype)0.0)
+#define ONE  ((flotype)1.0)
+#define TWO  ((flotype)2.0)
+
+#define absolute(n)    ((flotype)(fabs((double)(n))))
+#define logarithm(n)   ((flotype)(log((double)(n))))
+#define cosine(n)      ((flotype)(cos((double)(n))))
+#define hypertan(n)    ((flotype)(tanh((double)(n))))
+#define arctan(n)      ((flotype)(atan((double)(n))))
+#define exponential(n) ((flotype)(exp((double)(n))))
+
 // definition of various internal types
 enum switch_flag {
 	OFF = (0 == 1),
