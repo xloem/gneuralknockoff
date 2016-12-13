@@ -23,7 +23,9 @@
 #ifndef NETWORK_H
 #define NETWORK_H
 
-#include "defines.h"
+#include <stdint.h>  // for uint32_t macro etc.
+#include <stdio.h>   // for size_t macro, FILE macro, etc.
+#include "defines.h" // for frickin everything that isn't a macro.
 
 typedef struct _neuron{
     unsigned int global_id;	// a unique global id for each neuron
@@ -31,11 +33,11 @@ typedef struct _neuron{
  // connection[i] is the identification number of the neuron which
  // output is connected to the i-th input branch of the neuron
     struct _neuron* *connection;	// which neurons is connected
- enum activation_function activation;		// type of activation function
- enum accumulator_function accumulator;         // type of accumulator function
-// double x[MAX_IN]; // n inputs FMV: no more required...
- double *w;		// n weights
- double output;		// one output
+    enum activation_function activation;		// type of activation function
+    enum accumulator_function accumulator;         // type of accumulator function
+    // double x[MAX_IN]; // n inputs FMV: no more required...
+    double *w;		// n weights
+    double output;		// one output
 } neuron;
 
 typedef struct _layer {
@@ -64,15 +66,30 @@ struct nnet{
     flotype *weights;               // each synapse has its own weight.
     unsigned int *sources;         // each synapse has its own source (bias nodes are source zero).
     unsigned int *dests;           // each synapse has its own destination.
+    struct cases *data;
 };
 
 // struct added by Ray Dillinger, Nov 2016
 struct conf{
-    char *openingcomment;
+    char *openingcomment;   // opening comment is saved and used in writeback.
     unsigned int flags;
-    unsigned int serialnum;
-    unsigned int savecount;
-    char *savename;
+    unsigned int serialnum; // serial number of next save to output if serializing.
+    unsigned int savecount; // number of saves remaining to be made in the current plan
+    char *savename;         // filename for script writeback
+};
+
+// struct added by Ray Dillinger, Dec 2016
+struct cases{
+    uint32_t flags;         // 1 test 2 train 4 validate 8 deploy 10 sequential 20 seekable 40 randomize 80 no_output .....
+    size_t entrycount;      // number of cases in allocated data buffer.
+    size_t inputcount;      // width (number of nodes) of input data for this data source. usually nnet.inputcount.
+    size_t outputcount;     // width (number of nodes) of output for this data source. usually nnet.outputcount.
+    char *inname;           // filename for example data.  NULL for examples in script data.
+    FILE *inpipe;           // input pipe. NULL if pipe is not presently open.
+    char *outname;          // output filename.  NULL if output is not to be written to a file.
+    FILE *outpipe;          // NULL if pipe is not presently open.
+    flotype *data;          // The buffer which contains the actual data.
+    struct cases *next;     // yup, it's a linked list.  nnetwork scripts can ask for more than one 
 };
 
 

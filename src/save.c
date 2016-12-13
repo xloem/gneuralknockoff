@@ -136,6 +136,21 @@ void network_save_final_curve(network *nn, network_config *config)
 static const char* acctokens[ACCUMCOUNT] = {ACCTOKENS};
 static const char* outtokens[OUTPUTCOUNT] = {OUTTOKENS};
 
+void WriteImmediateCases(FILE *out, const struct cases *current){
+    assert(current != NULL); assert(out != NULL);
+    int entry; int datum; int casesize = current->inputcount + current->outputcount; int bracecontrol = MIN(current->inputcount, current->outputcount);
+    assert(casesize > 0);
+    for (entry = 0; entry < current->entrycount; entry++){
+        fprintf(out, "\n        ["); if (bracecontrol) fprintf(out, "[");
+        for (datum = 0; datum < current->inputcount; datum++) fprintf( out, FLOFMT" ", current->data[entry*casesize + datum]);
+        if (bracecontrol) fprintf(out,"][");
+        for (datum = current->inputcount; datum < casesize; datum++) fprintf( out, FLOFMT" ", current->data[entry*casesize + datum]);
+        fprintf(out, "]"); if (bracecontrol) fprintf(out, "]");
+    }
+}
+
+
+
 // Nnetwriter produces a script that, when read by the parser, produces a network with the same configuration, topology, weights, and firing sequence of the
 // network given as an argument.  All three of these things can be changed by various kinds of training, and there are different ways of expressing even the
 // same topology, so this may be different from the way the configfile originally wrote it.
@@ -143,35 +158,65 @@ void nnetwriter(struct nnet *net, struct conf *config, FILE *out){
     assert(net != NULL); assert (out != NULL);
     int start, end, width, acc, xfer;
     unsigned int maxbit;
+    struct cases *currentcase;
+    uint32_t currentmask;
     if (config->openingcomment != NULL) fprintf(out, "%s", config->openingcomment);
     if (net->nodecount < 2) return;
-    fprintf(out, "StartConfig\n");
-    if ((config->flags & (SILENCE_BIAS | SILENCE_DEBUG | SILENCE_ECHO | SILENCE_INPUT | SILENCE_OUTPUT | SILENCE_NODEINPUT |
-                          SILENCE_NODEOUTPUT | SILENCE_MULTIACTIVATION | SILENCE_RECURRENCE | SILENCE_RENUMBER)) != 0){
-        fprintf(out, "   Silence("); // Bias, Debug, Echo, Input, Output, NodeInput, NodeOutput, MultiActivation, Renumber
-        for (maxbit = 0x1; (config->flags & maxbit) == 0 && maxbit != 0; maxbit <<= 1);
-        if ((config->flags & SILENCE_BIAS) != 0){           fprintf(out, "Bias");
-            if (maxbit == SILENCE_BIAS)                     fprintf(out, ")\n");              else fprintf(out, ", ");}
-        if ((config->flags & SILENCE_DEBUG) != 0){          fprintf(out, "Debug");
-            if (maxbit == SILENCE_DEBUG)                    fprintf(out, ")\n");              else fprintf(out, ", ");}
-        if ((config->flags & SILENCE_ECHO) != 0){           fprintf(out, "Echo");
-            if (maxbit == SILENCE_ECHO)                     fprintf(out, ")\n");              else fprintf(out, ", ");}
-        if ((config->flags & SILENCE_INPUT) != 0){          fprintf(out, "Input");
-            if (maxbit == SILENCE_INPUT)                    fprintf(out, ")\n");              else fprintf(out, ", ");}
-        if ((config->flags & SILENCE_OUTPUT) != 0){         fprintf(out, "Output");
-            if (maxbit == SILENCE_OUTPUT)                   fprintf(out, ")\n");              else fprintf(out, ", ");}
-        if ((config->flags & SILENCE_NODEINPUT) != 0){      fprintf(out, "NodeInput");
-            if (maxbit == SILENCE_NODEINPUT)                fprintf(out, ")\n");              else fprintf(out, ", ");}
-        if ((config->flags & SILENCE_NODEOUTPUT) != 0){     fprintf(out, "NodeOutput");
-            if (maxbit == SILENCE_NODEOUTPUT)               fprintf(out, ")\n");              else fprintf(out, ", ");}
-        if ((config->flags & SILENCE_MULTIACTIVATION) != 0){fprintf(out, "MultiActivation");
-            if (maxbit == SILENCE_MULTIACTIVATION)          fprintf(out, ")\n");              else fprintf(out, ", ");}
-        if ((config->flags & SILENCE_RENUMBER) != 0)        fprintf(out, "Renumber)\n");
+    currentmask = (SILENCE_BIAS | SILENCE_DEBUG | SILENCE_ECHO | SILENCE_INPUT | SILENCE_OUTPUT | SILENCE_NODEINPUT |
+                   SILENCE_NODEOUTPUT | SILENCE_MULTIACTIVATION | SILENCE_RECURRENCE | SILENCE_RENUMBER);
+    if ((config->flags & currentmask) != 0 || (config->flags & SAVE_DEFAULT) != 0){
+        fprintf(out, "StartConfig\n");
+        if ((config->flags & currentmask) != 0){
+            fprintf(out, "   Silence( "); // Bias, Debug, Echo, Input, Output, NodeInput, NodeOutput, MultiActivation, Renumber
+            for (maxbit = 0x1; (config->flags & maxbit) == 0 && maxbit != 0; maxbit <<= 1);
+            if ((config->flags & SILENCE_BIAS) != 0)             fprintf(out, "Bias ");
+            if ((config->flags & SILENCE_DEBUG) != 0)            fprintf(out, "Debug ");
+            if ((config->flags & SILENCE_ECHO) != 0)             fprintf(out, "Echo ");
+            if ((config->flags & SILENCE_INPUT) != 0)            fprintf(out, "Input ");
+            if ((config->flags & SILENCE_OUTPUT) != 0)           fprintf(out, "Output ");
+            if ((config->flags & SILENCE_NODEINPUT) != 0)        fprintf(out, "NodeInput ");
+            if ((config->flags & SILENCE_NODEOUTPUT) != 0)       fprintf(out, "NodeOutput ");
+            if ((config->flags & SILENCE_MULTIACTIVATION) != 0)  fprintf(out, "MultiActivation ");
+            if ((config->flags & SILENCE_RENUMBER) != 0)         fprintf(out, "Renumber ");
+            fprintf(out, ")\n");
+        }
+        if ((config->flags & SAVE_DEFAULT) == 0){
+            fprintf(out,"    Save(\"%s\"", config->savename);
+            if ((config->flags & SAVE_SERIALIZE) !=0) fprintf(out, " Serialize");
+            if (config->savecount != 0)fprintf(out, " %d", config->savecount);
+            fprintf(out, ")\n");
+        }
+        fprintf(out, "\"%s\")\nEndConfig\n", config->savename);
     }
-    fprintf(out,"   Save(");
-    if ((config->flags & SAVE_SERIALIZE) !=0) fprintf(out, "Serialize, ");
-    if (config->savecount != 0)fprintf(out, "%d, ", config->savecount);
-    fprintf(out, "\"%s\")\nEndConfig\n", config->savename);
+    if (net->data != NULL){
+        fprintf(out, "StartData\n");
+        for (currentcase = net->data; currentcase != NULL; currentcase = currentcase->next){
+            fprintf(out, "   Data(");
+            currentmask = (DATA_IMMEDIATE | DATA_FROMFILE | DATA_FROMDIRECTORY | DATA_FROMPIPE);
+            switch(currentcase->flags & currentmask){
+            case DATA_IMMEDIATE :     fprintf(out, "Immediate ");      break;
+            case DATA_FROMFILE  :     fprintf(out, "FromFile ");       break;
+            case DATA_FROMDIRECTORY:  fprintf(out, "FromDirectory ");  break;
+            case DATA_FROMPIPE:       fprintf(out, "FromPipe ");       break;
+            default: fprintf(stderr, "Program Error: Network being saved has unrecognizable data source.\n"); exit(1);
+            }
+            if (currentcase->flags & currentmask != DATA_IMMEDIATE) fprintf(out, "\"%s\" ", currentcase->inname);
+            if ((currentcase->flags & DATA_TRAINING) != 0)     fprintf(out, "Training ");
+            if ((currentcase->flags & DATA_TESTING) != 0)      fprintf(out, "Testing ");
+            if ((currentcase->flags & DATA_VALIDATION) != 0)   fprintf(out, "Validation ");
+            if ((currentcase->flags & DATA_DEPLOYMENT) != 0)   fprintf(out, "Deployment ");
+            if ((currentcase->flags & DATA_NOINPUT) != 0)      fprintf(out, "NoInput ");
+            if ((currentcase->flags & DATA_NOOUTPUT) !=0)      fprintf(out, "NoOutput ");
+            if ((currentcase->flags & DATA_NOWRITEINPUT) != 0) fprintf(out, "WriteNoInput ");
+            if ((currentcase->flags & DATA_NOWRITEOUTPUT) != 0)fprintf(out, "WriteNoOutput ");
+            if ((currentcase->flags & DATA_WRITEFILE) != 0)    fprintf(out, "ToFile ");
+            if ((currentcase->flags & DATA_WRITEPIPE) != 0)    fprintf(out, "ToPipe ");
+            if ((currentcase->flags & (DATA_WRITEFILE | DATA_WRITEPIPE)) != 0) fprintf(out, "\"%s  \"", currentcase->outname);
+            if ((currentcase->flags & DATA_IMMEDIATE) != 0)     WriteImmediateCases(out, currentcase);
+            fprintf(out, ")\n");
+        }
+        fprintf(out, "EndData\n");
+    }
     end = start = 1;
     fprintf(out, "StartNodes\n");
     for (start = end=1; end < net->inputcount && end+1 < net->nodecount; start=++end){
@@ -194,10 +239,10 @@ void nnetwriter(struct nnet *net, struct conf *config, FILE *out){
 	else fprintf(out,"    CreateOutput( %d, %s, %s, %d)\n",1+end-start, acctokens[acc], outtokens[xfer], width);
     }
     fprintf(out, "EndNodes\n");
-    if (net->synapsecount == 0) return; else fprintf(out, "StartConnections\n");
-
+    if (net->synapsecount == 0) return;
+    fprintf(out, "StartConnections\n");
     // The logic in this while/switch construction is excessively intricate. Be careful and test a lot if you need to screw with it. - RD
-   int state, backtrack, conn, firstfrom, firstto, lastfrom, lastto, nex;
+    int state, backtrack, conn, firstfrom, firstto, lastfrom, lastto, nex;
     start = end = state = conn = firstfrom = firstto = lastfrom = lastto = nex = 0;
     while (state != 4)
 	switch(state){
@@ -210,7 +255,7 @@ void nnetwriter(struct nnet *net, struct conf *config, FILE *out){
 		} else if (net->dests[nex] >= firstto && net->dests[nex] <= lastto){
 		    if (net->dests[nex] == lastto){conn = end = nex;lastfrom = net->sources[nex];backtrack = ++nex;state = nex+1 == net->synapsecount ? 3 : 2;}
 		    else{if (nex+1==net->synapsecount){ conn = backtrack; state = 3;} else conn=nex++; }
-		} else { conn = backtrack; state = 3; fprintf(out,"# case 1 did nothing and we're skipping to 3.\n");}
+		} else { conn = backtrack; state = 3;}
 	    }else state=2; break;
 	case 2:
 	    if (net->dests[nex]==firstto && net->dests[conn]==lastto && net->sources[nex]==1+net->sources[conn]){// check for advancing in a column
@@ -223,8 +268,8 @@ void nnetwriter(struct nnet *net, struct conf *config, FILE *out){
 	    if (firstto == lastto) fprintf(out,"%d ", firstto);          else fprintf(out, "{%d %d} ", firstto, lastto);
 	    if (start != end) {
 		fprintf(out, "[");
-		for (nex = start; nex <= end; nex++) fprintf(out, "%f ", net->weights[nex]); fprintf(out, "])\n");}
-	    else fprintf(out, "%f)\n", net->weights[start] );
+		for (nex = start; nex <= end; nex++) fprintf(out, FLOFMT" ", net->weights[nex]); fprintf(out, "])\n");}
+	    else fprintf(out, FLOFMT"\n", net->weights[start] );
 	    if (end == net->synapsecount) state = 4;                     else {state = 0; conn = end+1;}
 	case 4: break;
 	default: {fprintf(stderr, "Program error in while/switch stmt of netwriter.\n"); exit(1);}

@@ -47,10 +47,6 @@ A nnet script is divided into sections of several types.  These sections are:
 
 .B  Training
 
-.B Data
-
-.B Training
-
 To take them one at a time:
 .SS Initial Comment
 Comments may occur anywhere in a nnet script file. They begin with a \(lq#\(rq character and end with a newline.  Initial
@@ -332,11 +328,83 @@ filename (or the name of a named pipe) to which results are to be written in dep
 and end with
 .I EndData,
 and in between contain
-.I Data, DataSource
-and
-.I DataOutput statements.
+.I Data
+statements.
 
-.B SECTION INCOMPLETE.  TBD
+The Syntax of a Data statement is
+.EX
+      Data(<data_source> <uses> <flags> <output_dest> <data>)
+.EE
+
+<data_source> starts with one of the keywords 'Immediate', 'FromFile', 'FromDirectory', or 'FromPipe'.  Any of the last
+three must be followed by a string containing the filename, named pipe, or directory name to open and read from, and
+also means the <data> argument may not be present.  'Immediate' means nnet should read cases inline directly from the
+<data> argument.
+
+All types of data source must give cases in the same format as the <data> argument described below. 'FromDirectory'
+means that every file in that directory is to be opened and read as a data source.
+
+<use> is one or more of the keywords 'Training', 'Testing', 'Validation', or 'Deployment', and describe what operations
+this data source is to be used for.   The keywords may come in any sequence.
+
+<flags> if present are zero or one of the keywords 'NoInput' or 'NoOutput' which serve to notify nnet that the cases it
+will be reading from this source do not include one or the other, and zero or one of the keywords 'WriteNoInput'
+or 'WriteNoOutput' which serve to notify nnet that Output written to a file or pipe should not include one or the other.
+Flag keywords may come in any sequence.
+
+<output_dest> may be skipped, unless 'Deployment' has been specified among the <use> arguments or 'WriteNoInput'
+or 'WriteNoOutput' have been specified among the flags. If present, <output_dest> consists of either the
+keyword 'ToFile' or the keyword 'ToPipe', followed by the file name or pipe name.  nnet will open the file in append
+mode (existing file contents will not be overwritten) or open a named pipe, and write its output to that location as a
+sequence of cases, in the same text format as the <data> segment.
+
+<data> if present is one or more cases.  If 'ReadNoInput' or 'ReadNoOutput' are specified, each case is a single
+sequence.  Otherwise, each case is a double sequence.  Single Sequences are an open square bracket, a sequence of real
+numbers, and a closing square bracket.  Double Sequences are an open square bracket, a Single Sequence for Input, a
+Single Sequence for output, and a closing square bracket.  The number of values in each Single Sequence must match the
+network's number of inputs or number of outputs, respectively.
+
+Here are some examples of correct Data Statements:
+.EX
+   Data(Immediate Training Testing Validation
+       [[0.0 0.0] [0.0]]
+       [[0.0 1.0] [1.0]]
+       [[1.0 0.0] [1.0]]
+       [[1.0 1.0] [0.0]] )
+.EE
+Gives the four cases of the classic XOR problem.  This same data will be used whether the script says to train, test, or
+validate.  The output produced by the network will not be written anywhere, but the testing summary (accuracy) will be
+written on stdout.  If the developer wanted to see the output from testing, he would write
+.EX
+      Data(Immediate Training Testing Validation
+       [[0.0 0.0] [0.0]]
+       [[0.0 1.0] [1.0]]
+       [[1.0 0.0] [1.0]]
+       [[1.0 1.0] [0.0]] ToPipe stdout)
+.EE
+This is exactly the same as the above except that the actual output of the network will be written to stdout before the
+test results are written on stderr.
+.EX
+   Data(FromPipe "inputstream" Deployment
+        ReadNoOutput WriteNoInput ToPipe "outputstream")
+.EE
+Says that when Deploying, we will read input (but no output) from the pipe named inputstream and write output(but not
+input) to the pipe named outputstream.
+.EX
+   Data(FromFile "Examples.nnx" Testing
+        ToFile "Results.nnx")
+.EE
+
+Directs nnet, when testing, to read complete cases (input and output) from Examples.nnx, then write complete cases to
+Results.nnx.  The results given in Examples.nnx will be compared to the results produced by the network for accuracy;
+the results produced by the network will be written in cases with the inputs that produced them.  Summary testing
+results and accuracy will be displayed on stdout.
+.EX
+  Data(FromDirectory "ExampleDir" Testing)
+.EE
+Directs nnet, when testing, to open every file in ExampleDir read cases from it, and not to bother writing the output
+anywhere.  This statement just allows the developer to view the testing summary and accuracy achieved which will be
+written on stdout.
 
 .SS Training Sections
 define training, testing, and/or deployment plans.
@@ -361,7 +429,7 @@ the conditions of the GNU Free Documentation License, version 1.3 or later.
 
 .SH REPORTING BUGS
 .B nnet
-is part of the gneural_network project. You may report any bugs, or review the bug database, at
+is part of the gneural_network project. You may report or review bugs at
 .UR gneural_network project bug database
 https://savannah.gnu.org/bugs/?group=gneuralnetwork
 .UE

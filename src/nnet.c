@@ -1,3 +1,4 @@
+#include "includes.h"
 #include "defines.h"
 #include "parser.h"
 #include "save.h"
@@ -17,13 +18,11 @@ int HandleOptions(int argc, char **argv){// name, args, NULL, returnval
     opterr = 0;
     while ((opt = getopt_long(argc, argv, "hvHl", options, NULL)) != -1)
 	switch(opt){
-	case 'v': printf("nnet 0.0.1\nCopyright(C) 2016 gneural_network developers\nLicense LGPLv3+. For information about copying, modifying, "
+	case 'v': printf("nnet 0.0.1\nCopyright(C) 2017 gneural_network developers\nLicense LGPLv3+. For information about copying, modifying, "
 			 "and distribution see <http://gnu.org/licenses/lgpl.html>.\n"); return(0);
-	case 'H': printf(MANPAGE);  break;
-	case 'l': printf(LANGMAN); break;
-	default: /* includes '?' & 'h' by default.*/
-	    printf(HELPSTRING);
-	    return (0);
+	case 'H': printf(MANPAGE);    return(0);
+	case 'l': printf(LANGMAN);    return(0);
+	default:  printf(HELPSTRING); return (0);
 	}
     return (1);
 }
@@ -33,6 +32,7 @@ int HandleOptions(int argc, char **argv){// name, args, NULL, returnval
 // config->savename should be arg (without serial number and without .nnet extension), plus .out extension.
 // serial number if present in filename should be saved in config, else zero should be saved in config.
 void GetFileNames(char* readname, struct conf *config, const char* arg){
+    config->flags |= SAVE_DEFAULT;
     size_t index = 0; size_t serialstart = 0; size_t serialend = 0; size_t serial = 0; size_t len = strlen(arg);
     for (index = 0; serialend == 0 && index < len && index < 255; index++){
 	if (arg[index] == '.' && serialstart == 0) serialstart = index+1;

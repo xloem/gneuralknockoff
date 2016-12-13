@@ -899,7 +899,7 @@ int ReadWeightMatrix(struct slidingbuffer *bf, struct conf *config, flotype *tar
 }
 
 
-// reads a quoted string with c-style control-character escapes.
+// reads a quoted string with c-style control-character escapes. This procedure allocates.
 int ReadQuotedString(struct slidingbuffer *bf, struct conf *config, char **retstring){
     assert(bf != NULL); assert(config != NULL);
     int allocsize = 0; char *retval = NULL;  *retstring = NULL;
@@ -1065,7 +1065,7 @@ void ReadOpeningComment(struct slidingbuffer *bf, struct conf *config){
 int ReadSilenceStatement(struct slidingbuffer *bf, struct conf *config){
     if (!AcceptToken(bf, config, "Silence")) return(0);
     SkipToNext(bf, config); if (!AcceptToken(bf, config, "(")) ErrStopParsing(bf, "Silence statements must be followed by '('",NULL);
-    while (1 == 1){  // loop exit is via return statement or ErrStopParsing call.
+    while (1 == 1){  // Loop exit is via function return or ErrStopParsing call.
 	SkipToNext(bf, config);
 	if (AcceptToken(bf, config, "Bias"))                 config->flags |= SILENCE_BIAS;
 	else if (AcceptToken(bf, config, "Debug"))           config->flags |= SILENCE_DEBUG;
@@ -1077,12 +1077,9 @@ int ReadSilenceStatement(struct slidingbuffer *bf, struct conf *config){
 	else if (AcceptToken(bf, config, "MultiActivation")) config->flags |= SILENCE_MULTIACTIVATION;
 	else if (AcceptToken(bf, config, "Recurrence"))      config->flags |= SILENCE_RECURRENCE;
 	else if (AcceptToken(bf, config, "Renumber"))        config->flags |= SILENCE_RENUMBER;
-	else ErrStopParsing
-		 (bf,"Unknown argument.  Arguments are Bias, Debug, Echo, Input, Output, NodeInput, NodeOutput, MultiActivation, Recurrence, and Renumber.",NULL);
-	SkipToNext(bf, config);
-	if (!TokenAvailable(bf, ",") && !TokenAvailable(bf,")")) ErrStopParsing(bf, "Silence Statements must have commas between arguments, or end with ')'.",NULL);
-	if (AcceptToken(bf, config, ")")) return(1);
-	else AcceptToken(bf, config, ",");
+        else if (AcceptToken(bf, config, ")" ))              return(1);
+        else ErrStopParsing
+                 (bf,"Unknown argument.  Arguments are Bias, Debug, Echo, Input, Output, NodeInput, NodeOutput, MultiActivation, Recurrence, and Renumber.",NULL);
     }
 }
 
@@ -1094,12 +1091,13 @@ int ReadSilenceStatement(struct slidingbuffer *bf, struct conf *config){
 int ReadSaveStatement(struct slidingbuffer *bf, struct conf *config){
     char *fname = NULL;
     if (!AcceptToken(bf, config, "Save")) return(0);
+    config->flags &= (0x0 ^ SAVE_DEFAULT);
     SkipToNext(bf, config); if (!AcceptToken(bf, config, "(")) ErrStopParsing(bf, "Save Statements must be followed by '('", NULL);
     while (1 == 1){
 	SkipToNext(bf, config);
 	if (AcceptToken(bf, config, ")"))                   return (1);
 	else if (AcceptToken(bf, config, "Serialize"))      config->flags |= SAVE_SERIALIZE;
-	else if (ReadQuotedString(bf,config, &fname))       config->savename = fname;
+	else if (ReadQuotedString(bf,config, &fname))       {free(config->savename);    config->savename = fname;}
 	else if (NumberAvailable(bf))                       config->savecount = ReadInteger(bf,config);
 	else ErrStopParsing(bf, "Save statement arguments can be the keyword 'Serialize', a count of saves to make, or filenames(in quotes).", fname);
     }
@@ -1121,9 +1119,132 @@ int ReadConfigSection(struct slidingbuffer *bf, struct conf *config, struct nnet
 void ReadTrainingSection(){} //TODO
 
 
+struct cases *DeleteFirstData(struct cases *arg){
+    if (arg == NULL) return(NULL);
+    free(arg->inname); free(arg->outname); free(arg->data); // not doing fcloses here as files are not yet open when this is called.
+    struct cases *nxt = arg->next; free(arg); return nxt;
+}
+
+
+// read a case data list.  Return 0 for failure, 1 for success.  This is separate from ReadWeightMatrix solely because it provides customized error messages.
+int ReadIOVals(struct slidingbuffer *bf, struct conf *config, flotype *target, int size){
+    assert(bf != NULL); assert (target != NULL); assert (size > 0);
+    int index;
+    SkipToNext(bf, config); if (!AcceptToken(bf, config, "[")) return (0);
+    for (index = 0; index < size; index++){
+	SkipToNext(bf, config);  if (NumberAvailable(bf)) target[index] = ReadFloatingPoint(bf, config);
+	else if (TokenAvailable(bf, "]")) ErrStopParsing(bf,"Not enough Inputs/Outputs in case.",NULL);
+	else ErrStopParsing(bf, "Non-numeric token in Input/Output list.",NULL);
+    }
+    SkipToNext(bf, config);
+    if (NumberAvailable(bf)) ErrStopParsing(bf, "Case has too many inputs or outputs.",NULL);
+    if (!AcceptToken(bf, config, "]")) ErrStopParsing(bf,"']' expected at end of Inputs/Outputs.",NULL);
+    return (1);
+}
+
+
+// [[ each case is double open square bracket, list of float values, optional ][close-open brades, list of values, close double square bracket.]]  note that
+// close-open braces are required unless ReadNoInput or ReadNoOutput have been specified.  We allocate and save a number of values consistent with our
+// input/output size, which may mismatch the number of values present in the case.
+int ReadImmediateCase(struct slidingbuffer *bf, struct conf *config, struct cases *dat, size_t casenumber){
+    size_t casesize = dat->inputcount+dat->outputcount;
+    size_t startingpoint = casenumber * casesize;
+    if (dat->data == NULL) {dat->data = (flotype *)calloc(16, casesize * sizeof(flotype)); dat->entrycount = 16;}
+    if (dat->data == NULL) {fprintf(stderr,"Allocation failure (1) in ReadImmediateCase.\n"); exit(1);}
+    else if (casenumber == dat->entrycount) {dat->data = realloc(dat->data, 2 * dat->entrycount * casesize * sizeof(flotype)); dat->entrycount *= 2;}
+    if (dat->data == NULL) {fprintf(stderr,"Allocation failure (2) in ReadImmediateCase.\n"); exit(1);}
+    if (dat->inputcount == 0 || dat->outputcount == 0){
+        if (!ReadIOVals(bf, config, &(dat->data[startingpoint]), casesize)) ErrStopParsing(bf, "Expected Data starting with '['.", NULL);
+        return(1);
+    }
+    SkipToNext(bf,config); if (!AcceptToken(bf, config, "[")) ErrStopParsing(bf,"Data cases must begin with '[' character.", NULL);
+    if (!ReadIOVals(bf, config, &(dat->data[startingpoint]), dat->inputcount)) ErrStopParsing(bf,"Input Sequence must begin with '['.",NULL);
+    if (!ReadIOVals(bf, config, &(dat->data[startingpoint + dat->inputcount]), dat->outputcount)) ErrStopParsing(bf,"Output Sequence must begin with '['.",NULL);
+    SkipToNext(bf,config); if (!AcceptToken(bf, config, "]")) ErrStopParsing(bf,"Data cases must end with ']' character.", NULL);
+    return(1);
+}
+
+
+// Reading Data Statements is complicated.
+// It is possible for the program to exit here with unreleased allocated memory.  In a threaded future or if ErrStopParsing ever ceases to exit this will need fixed.
+int ReadDataStatement(struct slidingbuffer *bf, struct conf *config, struct nnet *net){
+    struct cases *newdata;
+    if (!AcceptToken(bf, config, "Data")) return (0); else {
+        newdata = (struct cases *)calloc(1, sizeof(struct cases));
+        newdata->inputcount = net->inputcount; newdata->outputcount = net->outputcount; newdata->next = net->data;
+        SkipToNext(bf, config);}
+    if (AcceptToken(bf, config, "(")) SkipToNext(bf, config); else ErrStopParsing(bf, "Expected open paren in Data Statement.", newdata);
+    if (AcceptToken(bf, config, "Immediate")) newdata->flags |= DATA_IMMEDIATE | DATA_SEEKABLE; // cases to follow inline
+    else if (AcceptToken(bf, config, "FromFile")) newdata->flags |= DATA_FROMFILE | DATA_SEEKABLE; // each line is one case
+    else if (AcceptToken(bf, config, "FromDirectory")) newdata->flags |= DATA_FROMDIRECTORY | DATA_SEEKABLE; // each file is one case
+    else if (AcceptToken(bf, config, "FromPipe")) newdata->flags |= DATA_FROMPIPE;
+    else ErrStopParsing(bf, "Data statement missing source keyword (Immediate, FromFile, FromDirectory, or FromPipe).", newdata);
+    SkipToNext(bf, config);
+    if ((TokenAvailable(bf,"Immediate") || TokenAvailable(bf,"FromFile") || TokenAvailable(bf,"FromDirector") || TokenAvailable(bf,"FromPipe")))
+        ErrStopParsing(bf, "Extra data source found.  If you need to read data from multiple sources the script needs multiple data statements.", NULL);
+    if ((newdata->flags & (DATA_FROMFILE | DATA_FROMDIRECTORY | DATA_FROMPIPE)) != 0x0){
+        if (!ReadQuotedString(bf,config, &(newdata->inname)))
+            ErrStopParsing(bf, "From(File|Directory|Pipe) must be followed by a quoted string giving the name of a file, directory, or named pipe.", newdata);
+        else SkipToNext(bf, config);
+    }
+    if (!(TokenAvailable(bf, "Training") || TokenAvailable (bf, "Testing") || TokenAvailable (bf, "Validation") || TokenAvailable(bf, "Deployment")))
+        ErrStopParsing(bf, "Data Statement missing use keyword (Training, Testing, Validation, or Deployment).", newdata);
+    else while( TokenAvailable(bf, "Training") || TokenAvailable (bf, "Testing") || TokenAvailable (bf, "Validation") || TokenAvailable(bf, "Deployment")){
+             if (AcceptToken(bf, config, "Training"))        newdata->flags |= DATA_TRAINING;
+             else if (AcceptToken(bf, config, "Testing"))    newdata->flags |= DATA_TESTING;
+             else if (AcceptToken(bf, config, "Validation")) newdata->flags |= DATA_VALIDATION;
+             else if (AcceptToken(bf, config, "Deployment")) newdata->flags |= DATA_DEPLOYMENT;
+             SkipToNext(bf,config);
+        }
+    while (TokenAvailable(bf,"ReadNoInput") || TokenAvailable(bf,"ReadNoOutput") || TokenAvailable(bf,"ReadNoInput") || TokenAvailable(bf,"ReadNoOutput")){
+        if (AcceptToken(bf, config, "ReadNoInput"))           {newdata->flags |= DATA_NOINPUT;  newdata->inputcount = 0;}
+        else if (AcceptToken(bf, config, "ReadNoOutput"))     {newdata->flags |= DATA_NOOUTPUT; newdata->outputcount = 0;}
+        else if (AcceptToken(bf, config, "ReadNoInput"))  newdata->flags |= DATA_NOWRITEINPUT;
+        else if (AcceptToken(bf, config, "ReadNoOutput")) newdata->flags |= DATA_NOWRITEOUTPUT;
+        SkipToNext(bf, config);
+    }
+    if ((newdata->flags & DATA_NOINPUT) != 0x0 && (newdata->flags & DATA_NOOUTPUT) != 0x0)
+        ErrStopParsing(bf, "Both of flags ReadNoInput and ReadNoOutput found.  This means there is no data to read.", newdata);
+    if ((newdata->flags & DATA_NOWRITEINPUT) != 0x0 && (newdata->flags & DATA_NOWRITEOUTPUT) != 0x0)
+        ErrStopParsing(bf, "Both WriteNoInput and WriteNoOutput found.  If there is nothing to write then don't use ToFile or ToPipe.",NULL);
+    if ((newdata->flags & (DATA_NOOUTPUT | DATA_DEPLOYMENT | DATA_TRAINING | DATA_TESTING | DATA_VALIDATION)) != (DATA_NOOUTPUT | DATA_DEPLOYMENT))
+        ErrStopParsing(bf, "Deployment-only data set lacks ReadNoOutput keyword. (You wouldn't need to deploy if you already had the answers).", newdata);
+    SkipToNext(bf,config);
+    while (TokenAvailable(bf, "ToFile") || TokenAvailable(bf,"ToPipe")){
+        if (AcceptToken(bf, config, "ToFile")) newdata->flags |= DATA_WRITEFILE;
+        else if (AcceptToken(bf, config, "ToPipe")) newdata->flags |= DATA_WRITEPIPE;
+        if ((newdata->flags & DATA_WRITEPIPE) != 0 && (newdata->flags & DATA_WRITEFILE) != 0)
+            ErrStopParsing(bf,"Both of keywords ToFile and ToPipe found.  Only one may be used.", NULL);
+        SkipToNext(bf,config);
+        if (!ReadQuotedString(bf, config, &(newdata->outname)))
+            ErrStopParsing(bf, "ToPipe/ToFile keyword must be followed by a quoted string giving the name of a pipe or file.", newdata);
+        SkipToNext(bf,config);
+    }
+
+    if ((newdata->flags & DATA_DEPLOYMENT) != 0x0 && (newdata->outname == NULL))
+        ErrStopParsing(bf, "There would be no point in Deployment if we didn't need the answers. use 'ToFile/ToPipe' to say where to send them.", newdata);
+    size_t casecount = 0;
+    if ((newdata->flags & DATA_IMMEDIATE) != 0x0) while (ReadImmediateCase(bf, config, newdata, casecount++));
+    newdata->entrycount = casecount;
+    newdata->data = (flotype *)realloc(newdata->data, casecount * sizeof(flotype) * (newdata->inputcount + newdata->outputcount));
+    if (newdata->data == NULL) {fprintf(stderr,"Reallocation failure in ReadDataStatement.\n"); exit(1);}
+    SkipToNext(bf,config); if (!AcceptToken(bf, config, ")")) ErrStopParsing(bf,"Close Parenthesis expected at end of Data Statement.", newdata);
+    else net->data = newdata;
+    return(1);
+}
+
+
 // Data section: Specifies inline data, or data locations (files and/or writable pipes).  Training data (readable inputs and outputs) Testing data (readable
 // inputs and outputs) Validation data (readable inputs and outputs) Production input (readable inputs) Production output (writable outputs)
-void ReadDataSection(){} //TODO
+int ReadDataSection(struct slidingbuffer *bf, struct conf *config, struct nnet *net){
+    assert(net != NULL); assert(config != NULL); assert (bf != NULL);
+    SkipToNext(bf, config); if (!AcceptToken(bf, config, "StartData")) return(0); else SkipToNext(bf,config);
+    while (ReadDataStatement(bf, config, net)) SkipToNext(bf, config);
+    if (!AcceptToken(bf,config,"EndData")) {
+        while(net->data != NULL) net->data = DeleteFirstData(net->data);
+        ErrStopParsing(bf, "Expected a Data Statement or EndData",NULL);
+    } return(1);
+}
 
 
 // Node definition statements, until 'EndNodes'

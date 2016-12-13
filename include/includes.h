@@ -19,7 +19,17 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 */
+
+// This is supposed to prevent us from having to parse a whole bunch of library header files more than once.
+// unfortunately macros and typedefs from included headers are not included transitively, so for many definitions it
+// doesn't work.  Could be fixed by echoing important typedefs and macro defns here, but we're nowhere near the knee of
+// the curve where parsing recursive includes starts to occupy 90+% of the compile time.  Unless this gets to be a
+// ten-million-line-plus program, headers including headers ad infinitum is not likely to occupy more than half our
+// compile time and 'extra' includes for macros & typedefs shouldn't be a problem. The usual suspects for redundant
+// parsing are stdint (uint32_t & friends) and stdio (FILE, size_t, etc).
+
 #ifndef INCLUDES_H
+#define INCLUDES_H
 
 #include<assert.h>
 #include<ctype.h>
