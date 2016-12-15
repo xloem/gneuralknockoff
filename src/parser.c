@@ -1067,17 +1067,17 @@ int ReadSilenceStatement(struct slidingbuffer *bf, struct conf *config){
     SkipToNext(bf, config); if (!AcceptToken(bf, config, "(")) ErrStopParsing(bf, "Silence statements must be followed by '('",NULL);
     while (1 == 1){  // Loop exit is via function return or ErrStopParsing call.
 	SkipToNext(bf, config);
-	if (AcceptToken(bf, config, "Bias"))                 config->flags |= SILENCE_BIAS;
+        if (AcceptToken(bf, config, ")" ))                   return(1);
+	else if (AcceptToken(bf, config, "Bias"))            config->flags |= SILENCE_BIAS;
 	else if (AcceptToken(bf, config, "Debug"))           config->flags |= SILENCE_DEBUG;
-	else if (AcceptToken(bf, config, "Echo"))            config->flags |= SILENCE_ECHO;
-	else if (AcceptToken(bf, config, "Input"))           config->flags |= SILENCE_INPUT;
-	else if (AcceptToken(bf, config, "Output"))          config->flags |= SILENCE_OUTPUT;
-	else if (AcceptToken(bf, config, "NodeInput"))       config->flags |= SILENCE_NODEINPUT;
-	else if (AcceptToken(bf, config, "NodeOutput"))      config->flags |= SILENCE_NODEOUTPUT;
-	else if (AcceptToken(bf, config, "MultiActivation")) config->flags |= SILENCE_MULTIACTIVATION;
-	else if (AcceptToken(bf, config, "Recurrence"))      config->flags |= SILENCE_RECURRENCE;
-	else if (AcceptToken(bf, config, "Renumber"))        config->flags |= SILENCE_RENUMBER;
-        else if (AcceptToken(bf, config, ")" ))              return(1);
+        else if (AcceptToken(bf, config, "Echo"))            config->flags |= SILENCE_ECHO;
+        else if (AcceptToken(bf, config, "Input"))           config->flags |= SILENCE_INPUT;
+        else if (AcceptToken(bf, config, "Output"))          config->flags |= SILENCE_OUTPUT;
+        else if (AcceptToken(bf, config, "NodeInput"))       config->flags |= SILENCE_NODEINPUT;
+        else if (AcceptToken(bf, config, "NodeOutput"))      config->flags |= SILENCE_NODEOUTPUT;
+        else if (AcceptToken(bf, config, "MultiActivation")) config->flags |= SILENCE_MULTIACTIVATION;
+        else if (AcceptToken(bf, config, "Recurrence"))      config->flags |= SILENCE_RECURRENCE;
+        else if (AcceptToken(bf, config, "Renumber"))        config->flags |= SILENCE_RENUMBER;
         else ErrStopParsing
                  (bf,"Unknown argument.  Arguments are Bias, Debug, Echo, Input, Output, NodeInput, NodeOutput, MultiActivation, Recurrence, and Renumber.",NULL);
     }
@@ -1091,7 +1091,7 @@ int ReadSilenceStatement(struct slidingbuffer *bf, struct conf *config){
 int ReadSaveStatement(struct slidingbuffer *bf, struct conf *config){
     char *fname = NULL;
     if (!AcceptToken(bf, config, "Save")) return(0);
-    config->flags &= (0x0 ^ SAVE_DEFAULT);
+    config->flags &= (~SAVE_DEFAULT);
     SkipToNext(bf, config); if (!AcceptToken(bf, config, "(")) ErrStopParsing(bf, "Save Statements must be followed by '('", NULL);
     while (1 == 1){
 	SkipToNext(bf, config);
@@ -1149,15 +1149,13 @@ int ReadIOVals(struct slidingbuffer *bf, struct conf *config, flotype *target, i
 int ReadImmediateCase(struct slidingbuffer *bf, struct conf *config, struct cases *dat, size_t casenumber){
     size_t casesize = dat->inputcount+dat->outputcount;
     size_t startingpoint = casenumber * casesize;
+    SkipToNext(bf,config); if (!TokenAvailable(bf,"[")) return(0);
     if (dat->data == NULL) {dat->data = (flotype *)calloc(16, casesize * sizeof(flotype)); dat->entrycount = 16;}
     if (dat->data == NULL) {fprintf(stderr,"Allocation failure (1) in ReadImmediateCase.\n"); exit(1);}
     else if (casenumber == dat->entrycount) {dat->data = realloc(dat->data, 2 * dat->entrycount * casesize * sizeof(flotype)); dat->entrycount *= 2;}
     if (dat->data == NULL) {fprintf(stderr,"Allocation failure (2) in ReadImmediateCase.\n"); exit(1);}
-    if (dat->inputcount == 0 || dat->outputcount == 0){
-        if (!ReadIOVals(bf, config, &(dat->data[startingpoint]), casesize)) ErrStopParsing(bf, "Expected Data starting with '['.", NULL);
-        return(1);
-    }
-    SkipToNext(bf,config); if (!AcceptToken(bf, config, "[")) ErrStopParsing(bf,"Data cases must begin with '[' character.", NULL);
+    if (dat->inputcount == 0 || dat->outputcount == 0){ ReadIOVals(bf, config, &(dat->data[startingpoint]), casesize); return(1); }
+    AcceptToken(bf, config, "[");
     if (!ReadIOVals(bf, config, &(dat->data[startingpoint]), dat->inputcount)) ErrStopParsing(bf,"Input Sequence must begin with '['.",NULL);
     if (!ReadIOVals(bf, config, &(dat->data[startingpoint + dat->inputcount]), dat->outputcount)) ErrStopParsing(bf,"Output Sequence must begin with '['.",NULL);
     SkipToNext(bf,config); if (!AcceptToken(bf, config, "]")) ErrStopParsing(bf,"Data cases must end with ']' character.", NULL);
@@ -1207,7 +1205,7 @@ int ReadDataStatement(struct slidingbuffer *bf, struct conf *config, struct nnet
         ErrStopParsing(bf, "Both of flags ReadNoInput and ReadNoOutput found.  This means there is no data to read.", newdata);
     if ((newdata->flags & DATA_NOWRITEINPUT) != 0x0 && (newdata->flags & DATA_NOWRITEOUTPUT) != 0x0)
         ErrStopParsing(bf, "Both WriteNoInput and WriteNoOutput found.  If there is nothing to write then don't use ToFile or ToPipe.",NULL);
-    if ((newdata->flags & (DATA_NOOUTPUT | DATA_DEPLOYMENT | DATA_TRAINING | DATA_TESTING | DATA_VALIDATION)) != (DATA_NOOUTPUT | DATA_DEPLOYMENT))
+    if ((newdata->flags & DATA_DEPLOYMENT) != 0 && (newdata->flags & (DATA_NOOUTPUT | DATA_TRAINING | DATA_TESTING | DATA_VALIDATION)) != DATA_NOOUTPUT)
         ErrStopParsing(bf, "Deployment-only data set lacks ReadNoOutput keyword. (You wouldn't need to deploy if you already had the answers).", newdata);
     SkipToNext(bf,config);
     while (TokenAvailable(bf, "ToFile") || TokenAvailable(bf,"ToPipe")){
@@ -1367,8 +1365,10 @@ void nnetparser(struct nnet *net, struct conf *config, struct slidingbuffer *inp
     if (!TokenAvailable(input, "StartNodes") && !TokenAvailable(input, "StartConnections") && !TokenAvailable(input, "StartConfig"))
 	ErrStopParsing(input, "Expected 'StartConfig', 'StartNodes' or 'StartConnections' statement.",NULL);
     SkipToNext(input, config);
-    while (TokenAvailable(input, "StartConfig") || TokenAvailable(input, "StartNodes") || TokenAvailable(input, "StartConnections"))
-	if (!ReadNodeSection(input, config, net) && !ReadConnections(input, config, net) && !ReadConfigSection(input, config, net))
+    while (TokenAvailable(input, "StartConfig") || TokenAvailable(input, "StartNodes") || TokenAvailable(input, "StartConnections") ||
+           TokenAvailable(input, "StartData"))
+	if (!ReadNodeSection(input, config, net) && !ReadConnections(input, config, net) && !ReadConfigSection(input, config, net) &&
+            !ReadDataSection(input, config, net))
 	    ErrStopParsing(input, "Program Error in routine 'nnetparser'. ",NULL);
 	else SkipToNext(input, config);
     printf("\n");

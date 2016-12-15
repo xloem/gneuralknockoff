@@ -157,7 +157,6 @@ void WriteImmediateCases(FILE *out, const struct cases *current){
 void nnetwriter(struct nnet *net, struct conf *config, FILE *out){
     assert(net != NULL); assert (out != NULL);
     int start, end, width, acc, xfer;
-    unsigned int maxbit;
     struct cases *currentcase;
     uint32_t currentmask;
     if (config->openingcomment != NULL) fprintf(out, "%s", config->openingcomment);
@@ -167,8 +166,7 @@ void nnetwriter(struct nnet *net, struct conf *config, FILE *out){
     if ((config->flags & currentmask) != 0 || (config->flags & SAVE_DEFAULT) != 0){
         fprintf(out, "StartConfig\n");
         if ((config->flags & currentmask) != 0){
-            fprintf(out, "   Silence( "); // Bias, Debug, Echo, Input, Output, NodeInput, NodeOutput, MultiActivation, Renumber
-            for (maxbit = 0x1; (config->flags & maxbit) == 0 && maxbit != 0; maxbit <<= 1);
+            fprintf(out, "    Silence( ");
             if ((config->flags & SILENCE_BIAS) != 0)             fprintf(out, "Bias ");
             if ((config->flags & SILENCE_DEBUG) != 0)            fprintf(out, "Debug ");
             if ((config->flags & SILENCE_ECHO) != 0)             fprintf(out, "Echo ");
@@ -177,6 +175,7 @@ void nnetwriter(struct nnet *net, struct conf *config, FILE *out){
             if ((config->flags & SILENCE_NODEINPUT) != 0)        fprintf(out, "NodeInput ");
             if ((config->flags & SILENCE_NODEOUTPUT) != 0)       fprintf(out, "NodeOutput ");
             if ((config->flags & SILENCE_MULTIACTIVATION) != 0)  fprintf(out, "MultiActivation ");
+            if ((config->flags & SILENCE_RECURRENCE) != 0)       fprintf(out, "Recurrence ");
             if ((config->flags & SILENCE_RENUMBER) != 0)         fprintf(out, "Renumber ");
             fprintf(out, ")\n");
         }
@@ -186,40 +185,11 @@ void nnetwriter(struct nnet *net, struct conf *config, FILE *out){
             if (config->savecount != 0)fprintf(out, " %d", config->savecount);
             fprintf(out, ")\n");
         }
-        fprintf(out, "\"%s\")\nEndConfig\n", config->savename);
+        fprintf(out, "\nEndConfig\n");
     }
-    if (net->data != NULL){
-        fprintf(out, "StartData\n");
-        for (currentcase = net->data; currentcase != NULL; currentcase = currentcase->next){
-            fprintf(out, "   Data(");
-            currentmask = (DATA_IMMEDIATE | DATA_FROMFILE | DATA_FROMDIRECTORY | DATA_FROMPIPE);
-            switch(currentcase->flags & currentmask){
-            case DATA_IMMEDIATE :     fprintf(out, "Immediate ");      break;
-            case DATA_FROMFILE  :     fprintf(out, "FromFile ");       break;
-            case DATA_FROMDIRECTORY:  fprintf(out, "FromDirectory ");  break;
-            case DATA_FROMPIPE:       fprintf(out, "FromPipe ");       break;
-            default: fprintf(stderr, "Program Error: Network being saved has unrecognizable data source.\n"); exit(1);
-            }
-            if (currentcase->flags & currentmask != DATA_IMMEDIATE) fprintf(out, "\"%s\" ", currentcase->inname);
-            if ((currentcase->flags & DATA_TRAINING) != 0)     fprintf(out, "Training ");
-            if ((currentcase->flags & DATA_TESTING) != 0)      fprintf(out, "Testing ");
-            if ((currentcase->flags & DATA_VALIDATION) != 0)   fprintf(out, "Validation ");
-            if ((currentcase->flags & DATA_DEPLOYMENT) != 0)   fprintf(out, "Deployment ");
-            if ((currentcase->flags & DATA_NOINPUT) != 0)      fprintf(out, "NoInput ");
-            if ((currentcase->flags & DATA_NOOUTPUT) !=0)      fprintf(out, "NoOutput ");
-            if ((currentcase->flags & DATA_NOWRITEINPUT) != 0) fprintf(out, "WriteNoInput ");
-            if ((currentcase->flags & DATA_NOWRITEOUTPUT) != 0)fprintf(out, "WriteNoOutput ");
-            if ((currentcase->flags & DATA_WRITEFILE) != 0)    fprintf(out, "ToFile ");
-            if ((currentcase->flags & DATA_WRITEPIPE) != 0)    fprintf(out, "ToPipe ");
-            if ((currentcase->flags & (DATA_WRITEFILE | DATA_WRITEPIPE)) != 0) fprintf(out, "\"%s  \"", currentcase->outname);
-            if ((currentcase->flags & DATA_IMMEDIATE) != 0)     WriteImmediateCases(out, currentcase);
-            fprintf(out, ")\n");
-        }
-        fprintf(out, "EndData\n");
-    }
-    end = start = 1;
+
     fprintf(out, "StartNodes\n");
-    for (start = end=1; end < net->inputcount && end+1 < net->nodecount; start=++end){
+    for (start = end = 1; end < net->inputcount && end+1 < net->nodecount; start=++end){
 	acc = net->accum[start]; xfer = net->transfer[start]; width = net->transferwidths[start];
 	while(end<net->inputcount && 1+end<net->nodecount && net->accum[end+1]==acc && net->transfer[end+1]==xfer && net->transferwidths[end+1]==width) end++;
 	if (width == 1) fprintf(out,"    CreateInput( %d, %s, %s)\n",1+end-start, acctokens[acc], outtokens[xfer] );
@@ -239,40 +209,71 @@ void nnetwriter(struct nnet *net, struct conf *config, FILE *out){
 	else fprintf(out,"    CreateOutput( %d, %s, %s, %d)\n",1+end-start, acctokens[acc], outtokens[xfer], width);
     }
     fprintf(out, "EndNodes\n");
-    if (net->synapsecount == 0) return;
-    fprintf(out, "StartConnections\n");
-    // The logic in this while/switch construction is excessively intricate. Be careful and test a lot if you need to screw with it. - RD
-    int state, backtrack, conn, firstfrom, firstto, lastfrom, lastto, nex;
-    start = end = state = conn = firstfrom = firstto = lastfrom = lastto = nex = 0;
-    while (state != 4)
-	switch(state){
-	case 0: // ready to start on new expression
-	    end = start = conn; lastfrom=firstfrom=net->sources[conn]; lastto=firstto=net->dests[conn]; backtrack = nex = conn+1;
-	    state = conn >= net->synapsecount ? 4 : 1; break;
-	case 1: if (net->sources[nex] == net->sources[conn] && net->dests[nex] == 1+net->dests[conn]){// check for advancing in a row
-		if (net->sources[nex]==firstfrom){ end = conn = nex; lastto = net->dests[conn];
-		    if (nex+1 == net->synapsecount) state=3; else backtrack = ++nex;
-		} else if (net->dests[nex] >= firstto && net->dests[nex] <= lastto){
-		    if (net->dests[nex] == lastto){conn = end = nex;lastfrom = net->sources[nex];backtrack = ++nex;state = nex+1 == net->synapsecount ? 3 : 2;}
-		    else{if (nex+1==net->synapsecount){ conn = backtrack; state = 3;} else conn=nex++; }
-		} else { conn = backtrack; state = 3;}
-	    }else state=2; break;
-	case 2:
-	    if (net->dests[nex]==firstto && net->dests[conn]==lastto && net->sources[nex]==1+net->sources[conn]){// check for advancing in a column
-		if (firstto == lastto){end = conn = nex; lastfrom = net->sources[nex]; if (nex+1 < net->synapsecount) nex++; else state = 3;}
-		else {if (nex+1 == net->synapsecount){conn = backtrack; state = 3;} else {conn = nex; nex++; state = 1;}}
-	    } else {conn = backtrack; state = 3;} break;
-	case 3: // we've detected a complete expression.  print the connect statement and look for another.
-	    fprintf(out, "    Connect(" );
-	    if (firstfrom == lastfrom) fprintf(out,"%d ", firstfrom);    else fprintf(out, "{%d %d} ", firstfrom, lastfrom);
-	    if (firstto == lastto) fprintf(out,"%d ", firstto);          else fprintf(out, "{%d %d} ", firstto, lastto);
-	    if (start != end) {
-		fprintf(out, "[");
-		for (nex = start; nex <= end; nex++) fprintf(out, FLOFMT" ", net->weights[nex]); fprintf(out, "])\n");}
-	    else fprintf(out, FLOFMT"\n", net->weights[start] );
-	    if (end == net->synapsecount) state = 4;                     else {state = 0; conn = end+1;}
-	case 4: break;
-	default: {fprintf(stderr, "Program error in while/switch stmt of netwriter.\n"); exit(1);}
+
+    if (net->synapsecount != 0){
+        fprintf(out, "StartConnections\n");
+        // The logic in this while/switch construction is excessively intricate. Be careful and test a lot if you need to screw with it. - RD
+        int state, backtrack, conn, firstfrom, firstto, lastfrom, lastto, nex;
+        start = end = state = conn = firstfrom = firstto = lastfrom = lastto = nex = 0;
+        while (state != 4)
+            switch(state){
+            case 0: // ready to start on new expression
+                end = start = conn; lastfrom=firstfrom=net->sources[conn]; lastto=firstto=net->dests[conn]; backtrack = nex = conn+1;
+                state = conn >= net->synapsecount ? 4 : 1; break;
+            case 1: if (net->sources[nex] == net->sources[conn] && net->dests[nex] == 1+net->dests[conn]){// check for advancing in a row
+                    if (net->sources[nex]==firstfrom){ end = conn = nex; lastto = net->dests[conn];
+                        if (nex+1 == net->synapsecount) state=3; else backtrack = ++nex;
+                    } else if (net->dests[nex] >= firstto && net->dests[nex] <= lastto){
+                        if (net->dests[nex] == lastto){conn = end = nex;lastfrom = net->sources[nex];backtrack = ++nex;state = nex+1 == net->synapsecount ? 3 : 2;}
+                        else{if (nex+1==net->synapsecount){ conn = backtrack; state = 3;} else conn=nex++; }
+                    } else { conn = backtrack; state = 3;}
+                }else state=2; break;
+            case 2:
+                if (net->dests[nex]==firstto && net->dests[conn]==lastto && net->sources[nex]==1+net->sources[conn]){// check for advancing in a column
+                    if (firstto == lastto){end = conn = nex; lastfrom = net->sources[nex]; if (nex+1 < net->synapsecount) nex++; else state = 3;}
+                    else {if (nex+1 == net->synapsecount){conn = backtrack; state = 3;} else {conn = nex; nex++; state = 1;}}
+                } else {conn = backtrack; state = 3;} break;
+            case 3: // we've detected a complete expression.  print the connect statement and look for another.
+                fprintf(out, "    Connect(" );
+                if (firstfrom == lastfrom) fprintf(out,"%d ", firstfrom);    else fprintf(out, "{%d %d} ", firstfrom, lastfrom);
+                if (firstto == lastto) fprintf(out,"%d ", firstto);          else fprintf(out, "{%d %d} ", firstto, lastto);
+                if (start != end) {
+                    fprintf(out, "[");
+                    for (nex = start; nex <= end; nex++) fprintf(out, FLOFMT" ", net->weights[nex]); fprintf(out, "])\n");}
+                else fprintf(out, FLOFMT"\n", net->weights[start] );
+                if (end == net->synapsecount) state = 4;                     else {state = 0; conn = end+1;}
+            case 4: break;
+            default: {fprintf(stderr, "Program error in while/switch stmt of netwriter.\n"); exit(1);}
 	}
-    fprintf(out, "EndConnections\n");
+        fprintf(out, "EndConnections\n");
+    }
+    if (net->data != NULL){
+        fprintf(out, "StartData\n");
+        currentmask = (DATA_IMMEDIATE | DATA_FROMFILE | DATA_FROMDIRECTORY | DATA_FROMPIPE);
+        for (currentcase = net->data; currentcase != NULL; currentcase = currentcase->next){
+            fprintf(out, "   Data(");
+            switch(currentcase->flags & currentmask){
+            case DATA_IMMEDIATE :     fprintf(out, "Immediate ");      break;
+            case DATA_FROMFILE  :     fprintf(out, "FromFile ");       break;
+            case DATA_FROMDIRECTORY:  fprintf(out, "FromDirectory ");  break;
+            case DATA_FROMPIPE:       fprintf(out, "FromPipe ");       break;
+            default: fprintf(stderr, "Program Error: Network being saved has unrecognizable data source.\n"); exit(1);
+            }
+            if ((currentcase->flags & DATA_IMMEDIATE) == 0)                    fprintf(out, "\"%s\" ", currentcase->inname);
+            if ((currentcase->flags & DATA_TRAINING) != 0)                     fprintf(out, "Training ");
+            if ((currentcase->flags & DATA_TESTING) != 0)                      fprintf(out, "Testing ");
+            if ((currentcase->flags & DATA_VALIDATION) != 0)                   fprintf(out, "Validation ");
+            if ((currentcase->flags & DATA_DEPLOYMENT) != 0)                   fprintf(out, "Deployment ");
+            if ((currentcase->flags & DATA_NOINPUT) != 0)                      fprintf(out, "NoInput ");
+            if ((currentcase->flags & DATA_NOOUTPUT) !=0)                      fprintf(out, "NoOutput ");
+            if ((currentcase->flags & DATA_NOWRITEINPUT) != 0)                 fprintf(out, "WriteNoInput ");
+            if ((currentcase->flags & DATA_NOWRITEOUTPUT) != 0)                fprintf(out, "WriteNoOutput ");
+            if ((currentcase->flags & DATA_WRITEFILE) != 0)                    fprintf(out, "ToFile ");
+            if ((currentcase->flags & DATA_WRITEPIPE) != 0)                    fprintf(out, "ToPipe ");
+            if ((currentcase->flags & (DATA_WRITEFILE | DATA_WRITEPIPE)) != 0) fprintf(out, "\"%s  \"", currentcase->outname);
+            if ((currentcase->flags & DATA_IMMEDIATE) != 0)                    WriteImmediateCases(out, currentcase);
+            fprintf(out, ")\n");
+        }
+        fprintf(out, "EndData\n");
+    }
 }

@@ -51,9 +51,9 @@
 // restrictions.
 typedef double flotype;
 
-// FLOFMT preserves all bits (for scripts) but attempts to be human-readable in columns; FLOFMT3 is for human-readable (output).
-#define FLOFMT " %18.15g"
-#define FLOFMT3 " %6.3g"
+// FLOFMT is for scripts (replace with %#.15g if all bits are needed; FLOFMT3 is for columnar human-readable (output).
+#define FLOFMT " %#6g"
+#define FLOFMT3 " %#6.3g"
 
 #define ZERO ((flotype)0.0)
 #define ONE  ((flotype)1.0)

@@ -41,14 +41,17 @@ void GetFileNames(char* readname, struct conf *config, const char* arg){
 	else if (serialstart != 0 && serialend == 0) {serialstart = 0; serial = 0;}
     }
     config->serialnum = serial;
-    config->savename = malloc(sizeof(char) * (len+5)); if (config->savename == NULL){fprintf(stderr, "allocation failure atempting to save filename.\n"); exit(1);}
-    strcpy(readname, arg); if (strcmp(".nnet", &(arg[len-5]))==0){len-=5; readname[len]=0;}
-    if (serialend == 0) sprintf(config->savename, "%s.out", readname);
-    else {sprintf(config->savename,"%s",readname); config->savename[serialstart]=0;
-        if (serialend < len) strcat(config->savename, &(readname[serialend]));
-        strcat(config->savename,"out");
-    }
+    config->savename = malloc(sizeof(char) * (len+25)); if (config->savename == NULL){fprintf(stderr, "allocation failure atempting to save filename.\n"); exit(1);}
+    strcpy(readname, arg); if (strcmp(".nnet", &(arg[len-5]))==0) readname[len-5]=0;
     strcat(readname, ".nnet");
+    len = strlen(readname)-5;
+    if (serialstart != 0){
+        for (index = 0; index < serialstart; index++) config->savename[index] = readname[index];
+        for (index = 1; serialend+index < len; index++) config->savename[serialend+index] = readname[index];
+        config->savename[serialend+index+1] = 0;
+    }
+    else {strcpy(config->savename, readname); config->savename[len]= 0;}
+    strcat(config->savename,"out");
 }
 
 
@@ -60,8 +63,8 @@ void GetFileNames(char* readname, struct conf *config, const char* arg){
 void NameOutputFile(char *filename, struct conf *config){
     size_t lastdot = 0; size_t len = strlen(config->savename); size_t index = len; size_t writeindex = 0;
     if ((config->flags & SAVE_SERIALIZE) == 0) {strncpy(filename, config->savename, 255);return;}
-    while (--index > 0 && config->savename[index] != '.');
-    lastdot = (index == 0 && config->savename[0] != '.') ? len+1 : index;
+    for (index = 1; index <= len && config->savename[len-index] != '.'; index++);
+    lastdot = (config->savename[len-index] == '.') ? len-index : len;
     for (index = 0; (index <= len ) && writeindex < 256; index++)
 	if (index != lastdot){
 	    filename[writeindex++] = config->savename[index];
@@ -69,7 +72,6 @@ void NameOutputFile(char *filename, struct conf *config){
 	}
 	else writeindex += snprintf( &(filename[writeindex]),255-index,".%d.", ++(config->serialnum));
     filename[writeindex] = 0;
-    printf("output filename %s\n", filename);
 }
 
 int main(int argc, char** argv){
