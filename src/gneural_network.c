@@ -2,30 +2,17 @@
 
    gneural_network is the GNU package which implements a programmable neural network.
 
-   Copyright (C) 2016 Jean Michel Sellier
-   <jeanmichel.sellier@gmail.com>
+   Copyright (C) 2016-2017 Jean Michel Sellier <jeanmichel.sellier@gmail.com>
 
-   This program is free software; you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 3, or (at your option)
-   any later version.
+   This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software
+   Foundation; either version 3, or (at your option) any later version.
 
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
+   This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+   A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
-   You should have received a copy of the GNU General Public License
-   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+   You should have received a copy of the GNU General Public License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 */
-
-// =================================================================
-// File Name        : gneural_network.c
-// Version          : release 0.9.1
-// Creation         : 11 Nov. 2012, Cassibile (SR), Italy, Jean-Michel Sellier
-// Last Revision    : 22 Sep  2016, San Mateo CA USA, Ray Dillinger
-// =================================================================
 
 /*
 
@@ -133,7 +120,7 @@ PARTICULAR PURPOSE.\n\
 You may redistribute copies of GNU %s under the terms\n\
 of the GNU General Public License.\n\
 For more information about these matters, see the file named COPYING.\n",
-"2016","Gneural Network");
+"2016-2017","Gneural Network");
    exit (0);
   }
   else if (z){

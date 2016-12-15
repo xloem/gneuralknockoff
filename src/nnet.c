@@ -1,3 +1,22 @@
+/* nnet.c -- This belongs to gneural_network
+
+   gneural_network is the GNU package which implements a programmable neural network.
+
+   Copyright (C) 2016-2017 Ray Dillinger <bear@sonic.net>
+
+   This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software
+   Foundation; either version 3, or (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+   A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+*/
+
+
+
+
 #include "includes.h"
 #include "defines.h"
 #include "parser.h"
@@ -18,7 +37,7 @@ int HandleOptions(int argc, char **argv){// name, args, NULL, returnval
     opterr = 0;
     while ((opt = getopt_long(argc, argv, "hvHl", options, NULL)) != -1)
 	switch(opt){
-	case 'v': printf("nnet 0.0.1\nCopyright(C) 2017 gneural_network developers\nLicense LGPLv3+. For information about copying, modifying, "
+	case 'v': printf("nnet 0.0.1\nCopyright(C) 2016-2017 gneural_network developers\nLicense LGPLv3+. For information about copying, modifying, "
 			 "and distribution see <http://gnu.org/licenses/lgpl.html>.\n"); return(0);
 	case 'H': printf(MANPAGE);    return(0);
 	case 'l': printf(LANGMAN);    return(0);

@@ -2,32 +2,18 @@
 
    gneural_network is the GNU package which implements a programmable neural network.
 
-   Copyright (C) 2016 Jean Michel Sellier
-   <jeanmichel.sellier@gmail.com>
+   Copyright (C) 2016-2017 Ray Dillinger <bear@sonic.net>
+   Copyright (C) 2016 Jean Michel Sellier <jeanmichel.sellier@gmail.com>
+   Copyright (C) 2016 Francesco Maria Virlinzi <francesco.virlinzi@gmail.com>
 
-   Copyright (C) 2016 Francesco Maria Virlinzi
-   <francesco.virlinzi@gmail.com>
+   This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software
+   Foundation; either version 3, or (at your option) any later version.
 
-   This program is free software; you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 3, or (at your option)
-   any later version.
+   This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+   A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+   You should have received a copy of the GNU General Public License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-
-// =================================================================
-// File Name        : network.c
-// Version          : release 0.9.0
-// Creation         : 18 Apr. 2016, Catania Italy, Jean-Michel Sellier
-// Last Revision    : 22 Sep. 2016, San Mateo CA USA, Ray Dillinger
-// =================================================================
 
 /*
    Programmable Neural Network. Every neuron consists of n-inputs and only one output. The activation and accumulator
@@ -479,7 +465,7 @@ void AddRandomizedConnections(struct nnet *net, int fromstart, int fromend, int 
 }
 
 
-// produce a new-format network given an old-format network.  -- added by Ray D. 29 Aug 2016. The 'nnet' format has a
+//  produce a new-format network given an old-format network.  -- added by Ray D. 29 Aug 2016. The 'nnet' format has a
 //  single population of nodes (neurons) and a single sequence of connections (synapses).  The accumulation and transfer
 //  functions are called the first time in the sequence that the node is used as the source for any synapse. They are
 //  user definable on a per-node basis, as they are in the old network format.  Each node and connection has a global ID

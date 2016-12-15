@@ -2,21 +2,15 @@
 
    gneural_network is the GNU package which implements a programmable neural network.
 
-   Copyright (C) 2016 Jean Michel Sellier
-   <jeanmichel.sellier@gmail.com>
+   Copyright (C) 2016-2017 Jean Michel Sellier <jeanmichel.sellier@gmail.com>, Ray Dillinger <bear@sonic.net>
 
-   This program is free software; you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 3, or (at your option)
-   any later version.
+   This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software
+   Foundation; either version 3, or (at your option) any later version.
 
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
+   This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+   A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
-   You should have received a copy of the GNU General Public License
-   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+   You should have received a copy of the GNU General Public License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 */
 
@@ -217,7 +211,7 @@ enum optimization_method {
 "       Man page written by Ray Dillinger <bear at sonic dot net>\n"\
 "\n"\
 "COPYRIGHT\n"\
-"       nnet  and  its  documentation  are  Copyright (C) 2016 Ray Dillinger,\n"\
+"       nnet and its documentation  are  Copyright(C) 2016-2017 Ray Dillinger,\n"\
 "       Jean-Michel Sellier, and the Gneural_Network project.\n"\
 "\n"\
 "       Permission is granted to modify and distribute the software  and  its\n"\
@@ -229,7 +223,7 @@ enum optimization_method {
 "SEE ALSO\n"\
 "       nnet_language(1)\n"\
 "\n"\
-"Linux                           NOVEMBER 2016                        NNET(1)\n"
+"Linux                           JANUARY 2017                        NNET(1)\n"
 
 #define LANGMAN ""\
 "NNET_LANGUAGE(1)                User Manuals               NNET_LANGUAGE(1)\n"\
@@ -642,7 +636,7 @@ enum optimization_method {
 "       Man page written by Ray Dillinger <bear at sonic dot net>\n"\
 "\n"\
 "COPYRIGHT\n"\
-"       nnet  is  Copyright (C) 2016 Ray Dillinger, Jean-Michel Sellier, and\n"\
+"       nnet is Copyright(C) 2016-2017 Ray Dillinger, Jean-Michel Sellier, and\n"\
 "       the Gneural_Network project.  Permission is granted  to  modify  and\n"\
 "       distribute the software and its sources subject to the conditions of\n"\
 "       the GNU Public License, version 3 or later.  Permission  is  granted\n"\
@@ -658,6 +652,6 @@ enum optimization_method {
 "See Also\n"\
 "       nnet(1)\n"\
 "\n"\
-"Linux                             2016-11                  NNET_LANGUAGE(1)\n"
+"Linux                             JAN 2017                NNET_LANGUAGE(1)\n"
 
 #endif
