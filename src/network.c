@@ -465,20 +465,17 @@ void AddRandomizedConnections(struct nnet *net, int fromstart, int fromend, int 
 }
 
 
-//  produce a new-format network given an old-format network.  -- added by Ray D. 29 Aug 2016. The 'nnet' format has a
-//  single population of nodes (neurons) and a single sequence of connections (synapses).  The accumulation and transfer
-//  functions are called the first time in the sequence that the node is used as the source for any synapse. They are
-//  user definable on a per-node basis, as they are in the old network format.  Each node and connection has a global ID
-//  - which is the array index at which which its information is recorded. In the case of synapses the global ID is also
-//  the synapse's number in the sequence of synapse operations.
+//  produce a new-format network given an old-format network.  -- added by Ray D. 29 Aug 2016. The 'nnet' format has a single population of nodes (neurons) and
+//  a single sequence of connections (synapses).  The accumulation and transfer functions are called the first time in the sequence that the node is used as the
+//  source for any synapse. They are user definable on a per-node basis, as they are in the old network format.  Each node and connection has a global ID -
+//  which is the array index at which which its information is recorded. In the case of synapses the global ID is also the synapse's number in the sequence of
+//  synapse operations.
 
-// The advantages of the nnet format are: First, it permits bias weights.  Second, it does not depend on a layered
-//  structure. It allows backward connections so it can be used for recurrent networks and it allows self connections,
-//  so it can be used for Boltzmann networks or LSTM's. In general it permits recurrent and topologically varied
-//  networks. Third, neither the number of nodes nor the number of connections is limited.  Fourth, it allows transfer
-//  functions of arbitrary width (producing and consuming more than one node, so multi-argument and/or multi-output
-//  functions can be used).  Other than bias weights (initialized to zero) converted networks do not have these
-//  features.
+// The advantages of the nnet format are: First, it permits bias weights.  Second, it does not depend on a layered structure. It allows backward connections so
+//  it can be used for recurrent networks and it allows self connections, so it can be used for Boltzmann networks or LSTM's. In general it permits recurrent
+//  and topologically varied networks. Third, neither the number of nodes nor the number of connections is limited.  Fourth, it allows transfer functions of
+//  arbitrary width (producing and consuming more than one node, so multi-argument and/or multi-output functions can be used).  Other than bias weights
+//  (initialized to zero) converted networks do not have these features.
 
 struct nnet *convertnetwork(struct _network *oldnet){
     struct nnet *newval;    unsigned int layercount, neuroncount, connectioncount, nodenum;
@@ -514,7 +511,7 @@ struct nnet *convertnetwork(struct _network *oldnet){
 	    }
 	}
     }
-    // Traversal of old network gave us connections in sequence by destination; new format needs them in sequence by origin. so we sort.
+    // Traversal of old network gave us connections in sequence by destination; new format uses them in firing sequence by origin. so we sort.
     flotype wtmp; unsigned int srctmp; unsigned int desttmp; unsigned int skipsize; unsigned int i1; unsigned int i2;
     for (skipsize = (2 * --synapsecount) / 3; skipsize >= 1; skipsize = (2 * skipsize) / 3)
 	for (connectioncount = 0; connectioncount < synapsecount; connectioncount++){

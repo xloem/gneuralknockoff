@@ -134,6 +134,20 @@ enum optimization_method {
 #define DATA_WRITEPIPE     0x2000
 #define DATA_WRITEFILE     0x4000
 
+#define PLAN_TRAIN            0x1
+#define PLAN_TEST             0x2
+#define PLAN_VALIDATE         0x4
+#define PLAN_DEPLOY           0x8
+
+#define PLAN_GRAD_DESCENT    0X10
+#define PLAN_ALL_METHODS     (PLAN_GRAD_DESCENT)
+
+#define PLAN_DEFAULT_GOAL     (flotype)0.95
+#define PLAN_DEFAULT_EPOCHS   10
+#define PLAN_DEFAULT_RATE     (flotype)0.01
+#define PLAN_DEFAULT_MAXEP    1000
+
+
 #define MANPAGE "\n"\
 "NNET(1)                         User Manuals                         NNET(1)\n"\
 "\n"\
@@ -403,9 +417,9 @@ enum optimization_method {
 "       XOR):\n"\
 "\n"\
 "            StartNodes\n"\
-"                 CreateInput(2, None, Identity)\n"\
-"                 CreateHidden(1, Add, StepFunction)\n"\
-"                 CreateOutput(1, Add, StepFunction)\n"\
+"                 CreateInput(2 None Identity)\n"\
+"                 CreateHidden(1 Add StepFunction)\n"\
+"                 CreateOutput(1 Add StepFunction)\n"\
 "            EndNodes\n"\
 "\n"\
 "   Connection Definition Section\n"\

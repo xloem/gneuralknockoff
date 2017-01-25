@@ -61,6 +61,7 @@ struct nnet{
     unsigned int *sources;         // each synapse has its own source (bias nodes are source zero).
     unsigned int *dests;           // each synapse has its own destination.
     struct cases *data;
+    struct plans *plan;
 };
 
 // struct added by Ray Dillinger, Nov 2016
@@ -70,6 +71,23 @@ struct conf{
     unsigned int serialnum; // serial number of next save to output if serializing.
     unsigned int savecount; // number of saves remaining to be made in the current plan
     char *savename;         // filename for script writeback
+};
+
+// struct added by Ray Dillinger, Jan 2017
+struct plans{
+    unsigned int planflags; // train/test/validate/deploy, endOnAccuracy/endOnDivergence/
+    flotype goal; // goal accuracy if defined
+    unsigned int epochmin; // zero - end instantly if goal reached.
+    unsigned int epochmax; // zero - no maximum - continue until goal reached.
+    unsigned int batchsize;
+    unsigned int epochsize;
+    flotype trainrate;
+    flotype momentum;
+
+    char *outputdest; // filename to send individual results to case by case; may be NULL if output is not desired.
+    char *reportdest; // filename to send summary report (accuracy, use statistics, time, etc to).
+    char *inputsrc;  // filename to read input from (this in addition to whatever's in data statements);
+    struct plans *next;
 };
 
 // struct added by Ray Dillinger, Dec 2016

@@ -198,9 +198,9 @@ of computing XOR):
 
 .EX
      StartNodes
-          CreateInput(2, None, Identity)
-          CreateHidden(1, Add, StepFunction)
-          CreateOutput(1, Add, StepFunction)
+          CreateInput(2 None Identity)
+          CreateHidden(1 Add StepFunction)
+          CreateOutput(1 Add StepFunction)
      EndNodes
 .EE
 
@@ -380,7 +380,7 @@ written on stdout.  If the developer wanted to see the output from testing, he w
        [[0.0 0.0] [0.0]]
        [[0.0 1.0] [1.0]]
        [[1.0 0.0] [1.0]]
-       [[1.0 1.0] [0.0]] ToPipe stdout)
+       [[1.0 1.0] [0.0]] ToPipe "stdout")
 .EE
 This is exactly the same as the above except that the actual output of the network will be written to stdout before the
 test results are written on stderr.
@@ -406,13 +406,41 @@ Directs nnet, when testing, to open every file in ExampleDir read cases from it,
 anywhere.  This statement just allows the developer to view the testing summary and accuracy achieved which will be
 written on stdout.
 
-.SS Training Sections
-define training, testing, and/or deployment plans.
-.B nnet
-will execute these plans and create an output file with the network as modified by the execution.  Any output files
-created during the execution of training or testing will contain reduced plans (the plan necessary to finish the
-original training plan starting from the point at which the output file was created). The final output file will contain
-no training or testing instructions.
+.SS Plan Section
+
+Plan sections start with the keyword "StartPlan" and end with the keyword "EndPlan".  nnet takes these plans as
+instructions to carry out.  Any script files saved (due to save serialization, etc) while the plans are in progress will
+contain plan statements needed to complete any plans not yet carried out.  When all plans have been carried out, nnet
+will exit, saving a script with no Plan Section.
+
+Between the keywords StartPlan and EndPlan there may be zero or more Plan statements.  Plan statements are of four
+types: TestingPlan, TrainingPlan, ValidationPlan, and DeploymentPlan.  By default, training, testing, or validation
+plans will produce a report on stdout, and deployment plans will not.  The report may be redirected to a different
+output, or a report may be called for with a deployment plan, using 'ReportTo' followed by the name of a file or pipe to
+write to.
+
+The arguments of TrainingPlan must start with the name of a training method.  Additional arguments to TrainingPlan
+depend on the training method.  All training methods support TrainingGoal, BatchSize, EpochSize, MaxEpoch, and MinEpoch
+arguments.  TrainingGoal must be followed by a real number (an accuracy considered good enough to stop training).
+BatchSize, EpochSize, MaxEpoch, and MinEpoch must be followed by Integers.
+
+BatchSize is the number of examples to process between training updates.  EpochSize is the number of batches to process
+per epoch.  Between Epochs, accuracy is measured, report output is generated, and a check to see whether training is
+finished is made.  Also between epochs, depending on save serialization, an updated output script may be saved.  Other
+actions may happen between epochs depending on the training method and/or parameters selected.
+
+MaxEpoch and MinEpoch are stopping conditions.  If the count of epochs is less than MinEpoch, then training will
+continue even if the TrainingGoal accuracy has been reached.  If the count of epochs is greater than MaxEpoch,
+training will be stopped even if TrainingGoal accuracy has not been reached.
+
+Additional arguments that are meaningful with GradientDescent training plans include 'LearningRate.'  This is the
+size of the weight adjustments to make after each batch when training.
+
+In the absence of specific arguments assigning values to these parameters, Gradient Descent training plans default to a
+training rate of 0.01, an accuracy goal of 0.95, a batch size of 1, an epoch size of 10, and a MaxEpoch of 1000.  These
+are suitable values for a reasonable class of small problems, but will often need updating depending on what problem
+you're working on.
+
 
 .B SECTION INCOMPLETE.  TBD
 

@@ -735,7 +735,7 @@ void ErrStopParsing(struct slidingbuffer *bf, const char *msg, void *free1){
     exit(1);
 }
 
-// add a warning to the slidingbuffer - don't output it yet.
+// Add a warning to the slidingbuffer - don't output it yet.
 void AddWarning(struct slidingbuffer *bf, const char *msg){
     assert(msg != NULL);
     int warnlen = bf->warnings==NULL ? 0 : strlen(bf->warnings); int size = warnlen+strlen(msg)+50;
@@ -744,8 +744,8 @@ void AddWarning(struct slidingbuffer *bf, const char *msg){
     snprintf(cursor, size, "Line %3d Col %3d : %s\n", bf->line, bf->col, msg);
 }
 
-// print all warning messages so far saved in the slidingbuffer.
-void PrintWarnings(struct slidingbuffer *bf){assert(bf != NULL); if (bf->warnings != NULL) {fprintf(stderr, "\n%s", bf->warnings);}}
+// Print all warning messages so far saved in the slidingbuffer. Called from nnet.c
+void PrintWarnings(struct slidingbuffer *bf){if (bf->warnings != NULL) fprintf(stderr, "\n%s", bf->warnings);}
 
 // Ensure that there are at least min characters available in buffer.  Return 0 on fail, #chars available on success.
 int ChAvailable(struct slidingbuffer *bf, int min){
@@ -760,9 +760,9 @@ int ChAvailable(struct slidingbuffer *bf, int min){
 int NextCh(struct slidingbuffer *bf){assert(bf != NULL); if (ChAvailable(bf,1)) return(bf->buffer[bf->end % BFLEN]); else return(0); }
 
 // accept the specified number of characters updating the line & column counts.  Return #characters accepted.  Error messages give line numbers, so for verbose
-// debugging this routine outputs lines accepted with line numbers.
+// debugging this routine outputs accepted lines prefixed with line numbers.
 int AcceptCh(struct slidingbuffer *bf, struct conf *config, int len){
-    assert(bf != NULL);  assert(len >= 0);
+    assert(bf != NULL);  assert(config != NULL); assert(len > 0);
     char next;
     static int AnnouncedLineZero = 0;
     if (!AnnouncedLineZero++)printf("    0: ");
@@ -796,28 +796,29 @@ int TokenAvailable(struct slidingbuffer *bf, const char *token){
 
 // accept a given token iff it is available at beginning of input.  Return #characters accepted
 int AcceptToken(struct slidingbuffer *bf, struct conf *config, const char *token){
-    assert(bf != NULL); assert (token != NULL); return(AcceptCh(bf, config,  TokenAvailable(bf, token)));}
+    assert(bf != NULL); assert(token != NULL); return(AcceptCh(bf, config,  TokenAvailable(bf, token)));}
 
 
 // skip as much whitespace as there is available.
 void SkipWhiteSpace(struct slidingbuffer *bf, struct conf *config){assert(bf != NULL); while (ChAvailable(bf,1) && isspace(NextCh(bf))) AcceptCh(bf, config, 1);}
 
 // skip a comment iff a comment is at head of input. (comments are everything between # and EOL.)
-void SkipComment(struct slidingbuffer *bf, struct conf *config){assert(bf != NULL); if (TokenAvailable(bf, "#")) while(NextCh(bf) != '\n') AcceptCh(bf, config, 1);}
+void SkipComment(struct slidingbuffer *bf, struct conf *config){
+    assert(bf != NULL); assert(config != NULL); if (TokenAvailable(bf, "#")) while(NextCh(bf) != '\n') AcceptCh(bf, config, 1);}
 
 
 // read past all whitespace and comments to the next non-skipped character.
 void SkipToNext(struct slidingbuffer *bf, struct conf *config){
-    assert(bf != NULL); assert (config != NULL);
+    assert(bf != NULL); assert(config != NULL);
     do{SkipWhiteSpace(bf, config); SkipComment(bf, config); } while(isspace(NextCh(bf)) || TokenAvailable(bf, "#"));}
 
 // returns nonzero iff a number is available starting at the next character.
-int NumberAvailable(struct slidingbuffer *bf){assert(bf != NULL); int next = NextCh(bf);return (next == '+' || next == '-' || isdigit(next));}
+int NumberAvailable(struct slidingbuffer *bf){assert(bf != NULL); int next = NextCh(bf); return(next == '+' || next == '-' || isdigit(next));}
 
 
 // Read and return the number.  Controlled fail with helpful message if none available or wrong syntax. You must call 'NumberAvailable' to check validity first.
 int ReadInteger(struct slidingbuffer *bf, struct conf *config){
-    assert(bf != NULL);     assert(NumberAvailable(bf));
+    assert(bf != NULL); assert(config != NULL); assert(NumberAvailable(bf));
     static const int maxlen = (int)(log10(INT_MAX)) + 2;
     char buf[maxlen];
     ChAvailable(bf,2);
@@ -833,7 +834,7 @@ int ReadInteger(struct slidingbuffer *bf, struct conf *config){
 
 // Read and return the number.  Controlled fail with helpful message if none available or wrong syntax.  You must call 'NumberAvailable' first.
 flotype ReadFloatingPoint(struct slidingbuffer *bf, struct conf *config){
-    assert(bf != NULL);    assert(NumberAvailable(bf));
+    assert(bf != NULL);    assert(config != 0); assert(NumberAvailable(bf));
     static const int maxlen = 1085; // max decimal length for (negative, denormalized, 64-bit) double is 1079!!  That's CRAZY!
     char buf[maxlen]; int count = 0; int before = 0; int after = 0;
     if (!TokenAvailable(bf,"+") && !TokenAvailable(bf,"-") && !isdigit(NextCh(bf))) return (0);
@@ -862,7 +863,7 @@ flotype ReadFloatingPoint(struct slidingbuffer *bf, struct conf *config){
 
 // returns zero for failure, nonzero for success.
 int ReadIntSpan(struct slidingbuffer *bf, struct conf *config, int *start, int *end){
-    assert(bf != NULL); assert (start != NULL);
+    assert(bf != NULL); assert(config != NULL); assert(start != NULL);  assert(end != NULL && end != start);
     SkipToNext(bf, config);    if (!AcceptToken(bf, config, "{")) return (0);
     SkipToNext(bf, config);    if (!NumberAvailable(bf)) ErrStopParsing(bf, "Integer span starts with non-numeric token.  Integer Expected.",NULL);
     *start = ReadInteger(bf, config);
@@ -876,7 +877,7 @@ int ReadIntSpan(struct slidingbuffer *bf, struct conf *config, int *start, int *
 
 // read a weight matrix.  Return 0 for failure, 1 for success
 int ReadWeightMatrix(struct slidingbuffer *bf, struct conf *config, flotype *target, int size){
-    assert(bf != NULL); assert (target != NULL); assert (size > 0);
+    assert(bf != NULL); assert(config != NULL); assert(target != NULL); assert(size > 0);
     int index;
     SkipToNext(bf, config); if (!AcceptToken(bf, config, "[")) return (0);
     for (index = 0; index < size; index++){
@@ -898,9 +899,11 @@ int ReadQuotedString(struct slidingbuffer *bf, struct conf *config, char **retst
     if (!AcceptToken(bf, config, "\"")) return (0);
     for (int index = 0; 1 == 1; index++){
 	if (!ChAvailable(bf,1)) ErrStopParsing(bf, "While reading a string, reached end of input without finding a closing quote.", retval);
-	if (index + 3 >= allocsize){allocsize = MAX(allocsize * 2, 256); retval = (char*)realloc(retval, allocsize * sizeof(char));
-	    if (retval == NULL) ErrStopParsing(bf, "Runtime Error: Allocation Failure in ReadQuotedString", retval);}
-	if (AcceptToken(bf, config, "\"")){retval[index++] = '\0'; *retstring = realloc(retval, index*sizeof(char)); return(1);}
+	if (index + 3 >= allocsize){allocsize = MAX(allocsize * 2, 256); retval = (char*)realloc(retval, allocsize * sizeof(char)); //increase allocation.
+	    if (retval == NULL){fprintf(stderr, "Runtime Error: Allocation Failure(1) in ReadQuotedString\n"); exit(1);}}
+        if (AcceptToken(bf, config, "\"")){retval[index++] = '\0'; *retstring = realloc(retval, index*sizeof(char)); //reduce allocation to size actually used.
+            if (retval == NULL){fprintf(stderr, "Runtime Error: Allocation Failure(2) in ReadQuotedString\n"); exit(1);}
+            return(1);}
 	else if (ChAvailable(bf,2) && AcceptToken(bf, config, "\\")){ // handle c-style escapes
 	    if (AcceptToken(bf, config, "b")) retval[index++] = '\b';
 	    else if (AcceptToken(bf, config, "f"))  retval[index++] = '\f';
@@ -913,51 +916,47 @@ int ReadQuotedString(struct slidingbuffer *bf, struct conf *config, char **retst
 	}
 	else {retval[index++] = NextCh(bf); AcceptCh(bf, config, 1);}
     }
-    assert(1 == 0); // This Never Happens: the above for loop should never exit at bottom.
+    fprintf(stderr, "Program Error: Unhandled case in ReadQuotedString.\n"); exit(1);
 }
 
 #define WARNSIZE 256
 
 int ReadCreateNodeStmt(struct slidingbuffer *bf, struct conf *config, struct nnet *net){
-    assert(bf != NULL); assert (net != NULL);
+    assert(bf != NULL); assert(net != NULL);
     int in_hid_out = 0;
     int NumToCreate = 0;
     int Accum = 0;
     int Transfer = 0;
     int unitwidth = 1;
     char warnstring[WARNSIZE];
-    SkipToNext(bf, config);    if (!TokenAvailable(bf,"CreateInput") && !TokenAvailable(bf,"CreateHidden") && !TokenAvailable(bf,"CreateOutput")) return (0);
-    if (AcceptToken(bf, config,    "CreateInput")) in_hid_out = 1;
-    else if (AcceptToken(bf, config, "CreateHidden")) in_hid_out = 2;
-    else if (AcceptToken(bf, config, "CreateOutput")) in_hid_out = 3;
-    else assert (1 == 0); // unhandled case.
+    SkipToNext(bf, config);
+    in_hid_out = AcceptToken(bf, config, "CreateInput")? 1 :AcceptToken(bf, config, "CreateHidden")? 2 :AcceptToken(bf, config, "CreateOutput")? 3 :0;
+    if (in_hid_out == 0) return(0);
     SkipToNext(bf, config);    if (!AcceptToken(bf, config, "(")) ErrStopParsing(bf, "Expected Open Parenthesis",NULL);
-    SkipToNext(bf, config);    if (!NumberAvailable(bf)) ErrStopParsing(bf, "First argument of a node creation statement must be an integer.",NULL);
+    SkipToNext(bf, config);    if (!NumberAvailable(bf)) ErrStopParsing(bf, "First argument should give the number of nodes you want to create.",NULL);
     NumToCreate = ReadInteger(bf, config);
     if (NumToCreate <= 0) ErrStopParsing(bf, "It doesn't make sense to create less than one node.", NULL);
-    SkipToNext(bf, config);    if (!AcceptToken(bf, config, ",")) ErrStopParsing(bf, "Expected comma between arguments.",NULL);SkipToNext(bf, config);
+    SkipToNext(bf, config);
     for (Accum = 0; Accum < ACCUMCOUNT && !AcceptToken(bf, config, acctokens[Accum]); Accum++);
     if (Accum == ACCUMCOUNT){
 	int ct = 0; int printed = snprintf(warnstring, WARNSIZE,"Expected the name of an accumulator function:");
 	for (ct = 0; ct < ACCUMCOUNT && printed + strlen(acctokens[ct])+5 < WARNSIZE; ct++)
 	    printed += snprintf(&(warnstring[printed]), WARNSIZE-printed, " %s", acctokens[ct]);
 	snprintf(&(warnstring[printed]),WARNSIZE-printed, ".");
-	assert (ct == ACCUMCOUNT); // if it's not we didn't have enough space in warnstring for the names of our input functions.
-	ErrStopParsing(bf, warnstring, NULL);
+        if (ct != ACCUMCOUNT) {fprintf(stderr, "Program Error: warnstring too small to hold list of input functions in ReadCreateNodeStmt.\n"); exit(1);}
     }
-    SkipToNext(bf, config); if (!AcceptToken(bf, config, ",")) ErrStopParsing(bf, "Expected comma between arguments.",NULL);
+    if (in_hid_out == 3 && (strcmp(acctokens[Accum],"None") == 0))
+        AddWarning(bf, "Warning: an output node with 'None' for an accumulator function will never produce a useful output.");
     SkipToNext(bf, config); for (Transfer = 0; Transfer < OUTPUTCOUNT && !AcceptToken(bf, config, outtokens[Transfer]); Transfer++);
     if (Transfer == OUTPUTCOUNT){
 	int ct = 0; int printed = snprintf(warnstring, WARNSIZE,"Expected the name of an activation function:");
 	for (ct = 0; ct < OUTPUTCOUNT && printed + strlen(outtokens[ct])+5 < WARNSIZE; ct++)
 	    printed += snprintf(&(warnstring[printed]), WARNSIZE-printed, " %s", outtokens[ct]);
 	snprintf(&(warnstring[printed]), WARNSIZE-printed, ".");
-	assert (ct == OUTPUTCOUNT); // if it's not we didn't have enough space in warnstring for the names of our activation functions.
+        if (ct != ACCUMCOUNT) {fprintf(stderr, "Program Error: warnstring too small to hold list of activation functions in ReadCreateNodeStmt.\n"); exit(1);}
 	ErrStopParsing(bf,warnstring,NULL);
     }
     if (Transfer >= SINGLEOUTPUTS){
-	if (!AcceptToken(bf, config, ","))
-	    ErrStopParsing(bf, "Expected comma between arguments.  Parallel activation functions require the unit width in nodes as a fourth argument.",NULL);
 	SkipToNext(bf, config);   if (!NumberAvailable(bf)) ErrStopParsing(bf, "Expected Integer.",NULL);
 	unitwidth = ReadInteger(bf, config);     SkipToNext(bf, config);
     }
@@ -978,13 +977,13 @@ int ReadCreateNodeStmt(struct slidingbuffer *bf, struct conf *config, struct nne
 	}
 	break;
     case 3: AddOutputNodes(net, NumToCreate, Transfer, Accum, unitwidth); break;
-    default: assert(1 == 0); // Unhandled case.
+    default: fprintf(stderr, "Program Error: Unhandled case in ReadCreateNodeStmt.\n"); exit(1);
     }
     return (1);
 }
 
 int ReadConnectStmt(struct slidingbuffer *bf, struct conf *config, struct nnet *net){
-    assert(bf != NULL); assert (net != NULL);
+    assert(bf != NULL); assert(net != NULL);
     int firstlow;             int secondlow;
     int firsthigh;            int secondhigh;
     flotype weight = ZERO;    int imm_rnd_matrix = 0;
@@ -1002,12 +1001,12 @@ int ReadConnectStmt(struct slidingbuffer *bf, struct conf *config, struct nnet *
     else if (TokenAvailable(bf,"[")){
 	weightcount = (1 + firsthigh - firstlow) * (1 + secondhigh - secondlow);
 	weightlist = (flotype *) malloc(sizeof(flotype) * weightcount);
-	if (weightlist == NULL) ErrStopParsing(bf,"Runtime error: allocation failure in ReadConnectStmt.",NULL);
+        if (weightlist == NULL){fprintf(stderr, "Runtime Error: Allocation Failure in ReadConnectStmt\n"); exit(1);}
 	imm_rnd_matrix = 2;
 	ReadWeightMatrix(bf, config, weightlist, weightcount);
     }
     else ErrStopParsing(bf, "Expected floating point value, 'Randomize', or '['",NULL);
-    SkipToNext(bf, config);    if (!AcceptToken(bf, config, ")")) ErrStopParsing(bf, "Expected Close Parenthesis", weightlist);
+    SkipToNext(bf, config); if (!AcceptToken(bf, config, ")")) ErrStopParsing(bf, "Expected Close Parenthesis", weightlist);
     if (firstlow < 0 || secondlow < 0) ErrStopParsing(bf, "Connect Statement contains negative node ID.", weightlist);
     if (secondlow == 0) ErrStopParsing(bf,"Connect Statement names bias node as destination.", weightlist);
     if (firsthigh >= net->nodecount || secondhigh >= net->nodecount)
@@ -1016,7 +1015,7 @@ int ReadConnectStmt(struct slidingbuffer *bf, struct conf *config, struct nnet *
     case 0: AddConnections(net, firstlow, firsthigh, secondlow, secondhigh, &weight); break;
     case 1: AddRandomizedConnections(net, firstlow, firsthigh, secondlow, secondhigh); break;
     case 2: AddConnections(net, firstlow, firsthigh, secondlow, secondhigh, weightlist); break;
-    default: ErrStopParsing(bf, "Program Error: unhandled case in ReadConnectStmt.", weightlist); // This never happens
+    default: {fprintf(stderr, "Program Error: unhandled case in ReadConnectStmt.\n"); exit(1);}
     }
     free(weightlist);
     return(1);
@@ -1024,37 +1023,37 @@ int ReadConnectStmt(struct slidingbuffer *bf, struct conf *config, struct nnet *
 
 
 // an opening comment from the nnet file is to be preserved and written back to the output file.  Aside from people putting project notes into the source file
-// and notes on how to connect it etc, this should allow for the preservation of a "shebang" line invoking nnet as a script handler on an executable output
+// and notes on how to connect it etc, this should allow for the preservation of a "shebang" line invoking nnet as a script handler on an executable script
 // file. We don't want to confuse the line/column counts for subsequent error messages, so no bypassing AcceptCh with the 'obvious' fgets or getline call.
 void ReadOpeningComment(struct slidingbuffer *bf, struct conf *config){
 
-    assert(config != NULL); assert (bf != NULL);
+    assert(config != NULL); assert(bf != NULL);
     size_t index = 0; size_t allocsize = 240;
     char *checkval;
     char ch2Add;
 
     if (!TokenAvailable(bf,"#")) {config->openingcomment = NULL; return;}
-    config->openingcomment = malloc(allocsize);
-    if (config->openingcomment == NULL) {fprintf(stderr, "allocation failure.\n");exit(1);}
-
+    config->openingcomment = (char *)malloc(allocsize * sizeof(char));
+    if (config->openingcomment == NULL) {fprintf(stderr, "Runtime Error: Allocation failure(1) in ReadOpeningComment.\n");exit(1);}
     while (TokenAvailable(bf, "#")){
 	while('\n' != (ch2Add = NextCh(bf))){
 	    AcceptCh(bf, config, 1);
 	    if (allocsize <= index+2){
 		allocsize = 2*allocsize; config->openingcomment = realloc(config->openingcomment, allocsize);
-		if (config->openingcomment == NULL){fprintf(stderr,"allocation failure.\n");exit(1);}
+		if (config->openingcomment == NULL){fprintf(stderr,"Runtime Error: Allocation failure(2) in ReadOpeningComment.\n");exit(1);}
 	    }
 	    config->openingcomment[index++]=ch2Add;
 	}
 	config->openingcomment[index++]='\n';
     }
     config->openingcomment[index]='\0';
-    checkval = realloc(config->openingcomment, index);  // shouldn't fail because we're reducing size, but that's not guaranteed.  So if it does, keep the
+    checkval = realloc(config->openingcomment, index);  // reduce allocation
     if (checkval != NULL) config->openingcomment = checkval; // existing pointer value. It's not an allocation failure because we don't need to read more.
 }
 
 
 int ReadSilenceStatement(struct slidingbuffer *bf, struct conf *config){
+    assert(bf != NULL); assert(config != NULL);
     if (!AcceptToken(bf, config, "Silence")) return(0);
     SkipToNext(bf, config); if (!AcceptToken(bf, config, "(")) ErrStopParsing(bf, "Silence statements must be followed by '('",NULL);
     while (1 == 1){  // Loop exit is via function return or ErrStopParsing call.
@@ -1071,7 +1070,7 @@ int ReadSilenceStatement(struct slidingbuffer *bf, struct conf *config){
         else if (AcceptToken(bf, config, "Recurrence"))      config->flags |= SILENCE_RECURRENCE;
         else if (AcceptToken(bf, config, "Renumber"))        config->flags |= SILENCE_RENUMBER;
         else ErrStopParsing
-                 (bf,"Unknown argument.  Arguments are Bias, Debug, Echo, Input, Output, NodeInput, NodeOutput, MultiActivation, Recurrence, and Renumber.",NULL);
+                 (bf,"Expected close paren or one of Bias, Debug, Echo, Input, Output, NodeInput, NodeOutput, MultiActivation, Recurrence, and Renumber.",NULL);
     }
 }
 
@@ -1081,6 +1080,7 @@ int ReadSilenceStatement(struct slidingbuffer *bf, struct conf *config){
 // Serialize: insert a serial number into the savefile filenames.  Serial numbers start with any serial# in the input filename, or 0 if none.
 
 int ReadSaveStatement(struct slidingbuffer *bf, struct conf *config){
+    assert(bf != NULL); assert(config != NULL);
     char *fname = NULL;
     if (!AcceptToken(bf, config, "Save")) return(0);
     config->flags &= (~SAVE_DEFAULT);
@@ -1091,14 +1091,14 @@ int ReadSaveStatement(struct slidingbuffer *bf, struct conf *config){
 	else if (AcceptToken(bf, config, "Serialize"))      config->flags |= SAVE_SERIALIZE;
 	else if (ReadQuotedString(bf,config, &fname))       {free(config->savename);    config->savename = fname;}
 	else if (NumberAvailable(bf))                       config->savecount = ReadInteger(bf,config);
-	else ErrStopParsing(bf, "Save statement arguments can be the keyword 'Serialize', a count of saves to make, or filenames(in quotes).", fname);
+	else ErrStopParsing(bf, "Expected close parenthesis, the keyword 'Serialize', a count of saves to make, or savefile name(in \"quotes\").", fname);
     }
 }
 
 // Silence statements
 // Save("string"), Save(Serialize),Save(#intermediate savefiles);
 int ReadConfigSection(struct slidingbuffer *bf, struct conf *config, struct nnet *net){
-    assert(net != NULL); assert(config != NULL); assert (bf != NULL);
+    assert(net != NULL); assert(config != NULL); assert(bf != NULL);
     SkipToNext(bf, config); if (!AcceptToken(bf, config, "StartConfig")) return (0);
     SkipToNext(bf, config);
     while (ReadSilenceStatement(bf, config) || ReadSaveStatement(bf,config)) SkipToNext(bf, config);
@@ -1106,21 +1106,11 @@ int ReadConfigSection(struct slidingbuffer *bf, struct conf *config, struct nnet
     return(1);
 }
 
-// Error function, learning algorithm, algorithm parameters or parameters schedule, minibatch size, epoch size, maxEpochs, maxAccuracy, maxDivergence (between
-// training & testing accuracy), regularization strategy, regularization parameters, (clipping, L0, L1, L2, L3, Dropout)
-void ReadTrainingSection(){} //TODO
-
-
-struct cases *DeleteFirstData(struct cases *arg){
-    if (arg == NULL) return(NULL);
-    free(arg->inname); free(arg->outname); free(arg->data); // not doing fcloses here as files are not yet open when this is called.
-    struct cases *nxt = arg->next; free(arg); return nxt;
-}
 
 
 // read a case data list.  Return 0 for failure, 1 for success.  This is separate from ReadWeightMatrix solely because it provides customized error messages.
 int ReadIOVals(struct slidingbuffer *bf, struct conf *config, flotype *target, int size){
-    assert(bf != NULL); assert (target != NULL); assert (size > 0);
+    assert(bf != NULL); assert(target != NULL); assert(size > 0);
     int index;
     SkipToNext(bf, config); if (!AcceptToken(bf, config, "[")) return (0);
     for (index = 0; index < size; index++){
@@ -1135,17 +1125,18 @@ int ReadIOVals(struct slidingbuffer *bf, struct conf *config, flotype *target, i
 }
 
 
-// [[ each case is double open square bracket, list of float values, optional ][close-open brades, list of values, close double square bracket.]]  note that
+// [[ each case is double open square bracket, list of float values, optional ][(close-open braces), list of values, closing double square bracket.]]  note that
 // close-open braces are required unless ReadNoInput or ReadNoOutput have been specified.  We allocate and save a number of values consistent with our
 // input/output size, which may mismatch the number of values present in the case.
 int ReadImmediateCase(struct slidingbuffer *bf, struct conf *config, struct cases *dat, size_t casenumber){
+    assert(bf != NULL); assert(config != NULL); assert(dat != NULL);
     size_t casesize = dat->inputcount+dat->outputcount;
     size_t startingpoint = casenumber * casesize;
     SkipToNext(bf,config); if (!TokenAvailable(bf,"[")) return(0);
     if (dat->data == NULL) {dat->data = (flotype *)calloc(16, casesize * sizeof(flotype)); dat->entrycount = 16;}
-    if (dat->data == NULL) {fprintf(stderr,"Allocation failure (1) in ReadImmediateCase.\n"); exit(1);}
+    if (dat->data == NULL) {fprintf(stderr,"Runtime Error: Allocation failure (1) in ReadImmediateCase.\n"); exit(1);}
     else if (casenumber == dat->entrycount) {dat->data = realloc(dat->data, 2 * dat->entrycount * casesize * sizeof(flotype)); dat->entrycount *= 2;}
-    if (dat->data == NULL) {fprintf(stderr,"Allocation failure (2) in ReadImmediateCase.\n"); exit(1);}
+    if (dat->data == NULL) {fprintf(stderr,"Runtime Error: Allocation failure (2) in ReadImmediateCase.\n"); exit(1);}
     if (dat->inputcount == 0 || dat->outputcount == 0){ ReadIOVals(bf, config, &(dat->data[startingpoint]), casesize); return(1); }
     AcceptToken(bf, config, "[");
     if (!ReadIOVals(bf, config, &(dat->data[startingpoint]), dat->inputcount)) ErrStopParsing(bf,"Input Sequence must begin with '['.",NULL);
@@ -1158,6 +1149,7 @@ int ReadImmediateCase(struct slidingbuffer *bf, struct conf *config, struct case
 // Reading Data Statements is complicated.
 // It is possible for the program to exit here with unreleased allocated memory.  In a threaded future or if ErrStopParsing ever ceases to exit this will need fixed.
 int ReadDataStatement(struct slidingbuffer *bf, struct conf *config, struct nnet *net){
+    assert(bf != NULL); assert(config != NULL); assert(net != NULL);
     struct cases *newdata;
     if (!AcceptToken(bf, config, "Data")) return (0); else {
         newdata = (struct cases *)calloc(1, sizeof(struct cases));
@@ -1212,22 +1204,28 @@ int ReadDataStatement(struct slidingbuffer *bf, struct conf *config, struct nnet
     }
 
     if ((newdata->flags & DATA_DEPLOYMENT) != 0x0 && (newdata->outname == NULL))
-        ErrStopParsing(bf, "There would be no point in Deployment if we didn't need the answers. use 'ToFile/ToPipe' to say where to send them.", newdata);
+        ErrStopParsing(bf, "There would be no point in Deployment if we didn't need the answers. Use 'ToFile/ToPipe' to say where to send them.", newdata);
     size_t casecount = 0;
     if ((newdata->flags & DATA_IMMEDIATE) != 0x0) while (ReadImmediateCase(bf, config, newdata, casecount++));
     newdata->entrycount = casecount;
     newdata->data = (flotype *)realloc(newdata->data, casecount * sizeof(flotype) * (newdata->inputcount + newdata->outputcount));
-    if (newdata->data == NULL) {fprintf(stderr,"Reallocation failure in ReadDataStatement.\n"); exit(1);}
+    if (newdata->data == NULL) {fprintf(stderr,"Runtime Error: Reallocation failure in ReadDataStatement.\n"); exit(1);}
     SkipToNext(bf,config); if (!AcceptToken(bf, config, ")")) ErrStopParsing(bf,"Close Parenthesis expected at end of Data Statement.", newdata);
     else net->data = newdata;
     return(1);
 }
 
 
+struct cases *DeleteFirstData(struct cases *arg){
+    if (arg == NULL) return(NULL);
+    free(arg->inname); free(arg->outname); free(arg->data); // not doing fcloses here as files are not yet open when this is called.
+    struct cases *nxt = arg->next; free(arg); return nxt;
+}
+
 // Data section: Specifies inline data, or data locations (files and/or writable pipes).  Training data (readable inputs and outputs) Testing data (readable
 // inputs and outputs) Validation data (readable inputs and outputs) Production input (readable inputs) Production output (writable outputs)
 int ReadDataSection(struct slidingbuffer *bf, struct conf *config, struct nnet *net){
-    assert(net != NULL); assert(config != NULL); assert (bf != NULL);
+    assert(net != NULL); assert(config != NULL); assert(bf != NULL);
     SkipToNext(bf, config); if (!AcceptToken(bf, config, "StartData")) return(0); else SkipToNext(bf,config);
     while (ReadDataStatement(bf, config, net)) SkipToNext(bf, config);
     if (!AcceptToken(bf,config,"EndData")) {
@@ -1239,7 +1237,7 @@ int ReadDataSection(struct slidingbuffer *bf, struct conf *config, struct nnet *
 
 // Node definition statements, until 'EndNodes'
 int ReadNodeSection(struct slidingbuffer *bf, struct conf *config, struct nnet *net){
-    assert(bf != NULL); assert (net != NULL);
+    assert(bf != NULL); assert(config != NULL); assert(net != NULL);
     SkipToNext(bf, config);    if (!AcceptToken(bf, config, "StartNodes"))return (0);
     if (net->nodecount != 0) ErrStopParsing(bf, "Only one Node Definition section is allowed in a configuration file.",NULL);
     if (ReadCreateNodeStmt(bf, config, net)) while (ReadCreateNodeStmt(bf, config, net));
@@ -1250,14 +1248,149 @@ int ReadNodeSection(struct slidingbuffer *bf, struct conf *config, struct nnet *
 }
 
 
+
+/*int ReadTrOutFile(struct slidingbuffer *bf, struct conf *config, struct plans *pl){
+    assert(bf != NULL); assert(config != NULL); assert(pl != NULL);
+    if (!AcceptToken(bf, config, "OutputTo")) return(0);else SkipToNext(bf, config);
+    if (ReadQuotedString(bf, config, &(pl->outputdest))) return(1);
+    else ErrStopParsing(bf, "Expected the name of a file or pipe (in \"quotes\") to send network output to.", NULL);
+    return(1);
+    }*/
+int ReadTrReportFile(struct slidingbuffer *bf, struct conf *config, struct plans *pl){
+    assert(bf != NULL); assert(config != NULL); assert(pl != NULL);
+    if (!AcceptToken(bf, config, "ReportTo")) return(0);else SkipToNext(bf, config);
+    if (ReadQuotedString(bf, config, &(pl->reportdest))) return(1);
+    else ErrStopParsing(bf, "Expected the name of a file or pipe (in \"quotes\") to send the the training report to.", NULL);
+    return(1);
+}
+int ReadTrMaxEpochs(struct slidingbuffer *bf, struct conf *config, struct plans *pl){
+    assert(bf != NULL); assert(config != NULL); assert (pl != NULL);
+    if (!AcceptToken(bf, config, "MaxEpoch")) return(0); else SkipToNext(bf, config);
+    if (NumberAvailable(bf)) pl->epochmax = ReadInteger(bf, config); else ErrStopParsing(bf, "An integer number of epochs must follow 'MaxEpoch'.", NULL);
+    return(1);
+}
+int ReadTrMinEpochs(struct slidingbuffer *bf, struct conf *config, struct plans *pl){
+    assert(bf != NULL); assert(config != NULL); assert (pl != NULL);
+    if (!AcceptToken(bf, config, "MinEpoch")) return(0); else SkipToNext(bf, config);
+    if (NumberAvailable(bf)) pl->epochmin = ReadInteger(bf, config); else ErrStopParsing(bf, "An integer number of epochs must follow 'MinEpoch'.", NULL);
+    return(1);
+}
+int ReadTrGoal(struct slidingbuffer *bf, struct conf *config, struct plans *pl){
+    assert(bf != NULL); assert(config != NULL); assert(pl != NULL);
+    if (!AcceptToken(bf, config, "TrainingGoal")) return (0); else SkipToNext(bf, config);
+    if (NumberAvailable(bf)) pl->goal=ReadFloatingPoint(bf, config); else ErrStopParsing(bf,"A floating-point accuracy must follow 'TrainingGoal'.", NULL);
+    return(1);
+}
+int ReadTrLearnRate(struct slidingbuffer *bf, struct conf *config, struct plans *pl){
+    assert(bf != NULL); assert(config != NULL); assert(pl != NULL);
+    if (!AcceptToken(bf, config, "LearningRate")) return (0); else SkipToNext(bf, config);
+    if(NumberAvailable(bf))pl->trainrate=ReadFloatingPoint(bf,config);else ErrStopParsing(bf,"A floating-point learning rate must follow 'TrainingGoal'.", NULL);
+    return(1);
+}
+int ReadTrBatchSize(struct slidingbuffer *bf, struct conf *config,  struct plans *pl){
+    assert(bf != NULL); assert(config != NULL); assert(pl != NULL);
+    if (!AcceptToken(bf, config, "BatchSize")) return (0); else SkipToNext(bf, config);
+    if (NumberAvailable(bf)) pl->batchsize = ReadInteger(bf, config); else ErrStopParsing(bf, "An integer number of cases must follow 'BatchSize'.", NULL);
+    return(1);
+}
+int ReadTrEpochSize(struct slidingbuffer *bf, struct conf *config, struct plans *pl){
+    assert(bf != NULL); assert(config != NULL); assert(pl != NULL);
+    if (!AcceptToken(bf, config, "Goal")) return (0); else SkipToNext(bf, config);
+    if (NumberAvailable(bf)) pl->epochsize = ReadInteger(bf, config); else ErrStopParsing(bf, "A an integer number of batches must follow 'EpochSize'.", NULL);
+    return(1);
+}
+
+int ReadGradientDescentArg(struct slidingbuffer *bf, struct conf *config, struct plans *pl){
+    assert(bf != NULL); assert(config != NULL); assert(pl != NULL);
+    if (ReadTrBatchSize(bf, config, pl)||ReadTrLearnRate(bf, config, pl))return(1);
+    return(0);
+}
+
+
+int ReadTrainingPlan(struct slidingbuffer *bf, struct conf *config, struct nnet *net){
+    assert(bf != NULL); assert(config != NULL); assert (net != NULL);
+    struct plans buf; struct plans *ret = &buf;
+    if (!AcceptToken(bf, config, "TrainingPlan")) return(0); else SkipToNext(bf, config);
+    ret->planflags |= PLAN_TRAIN;
+    if (!AcceptToken(bf, config, "(")) ErrStopParsing(bf, "'TrainingPlan' must be followed by an open parenthesis.", NULL); else SkipToNext(bf, config);
+    if (AcceptToken(bf, config, "GradientDescent")){ SkipToNext(bf,config);
+        ret->batchsize = 1; ret->epochsize = PLAN_DEFAULT_EPOCHS; ret->goal = PLAN_DEFAULT_GOAL; ret->trainrate = PLAN_DEFAULT_RATE;
+        ret->epochmax = PLAN_DEFAULT_MAXEP; ret->planflags |= PLAN_GRAD_DESCENT;
+        while (ReadGradientDescentArg(bf, config, ret) || ReadTrMaxEpochs(bf, config, ret) || ReadTrMinEpochs(bf, config, ret)
+               || ReadTrReportFile(bf,config,ret)|| ReadTrGoal(bf,config,ret)) SkipToNext(bf,config);}
+    // else if (AcceptToken(bf, config, "Genetic")) etc...
+    else ErrStopParsing(bf, "Expected a training method to use. Methods available are: 'GradientDescent'.", NULL);
+    SkipToNext(bf, config);
+    if (!AcceptToken(bf, config, ")"))
+        ErrStopParsing(bf, "Expected 'TrainingGoal', 'LearningRate', 'BatchSize', 'EpochSize','ReportTo', 'MaxEpoch', 'MinEpoch', or closing parenthesis.", NULL);
+    ret = (struct plans *)malloc(sizeof(struct plans));
+    if (ret == NULL){fprintf(stderr, "Runtime Error: Allocation failure in ReadTrainingPlan.\n"); exit(1);}
+    memcpy((void *)&buf, (void *)ret, sizeof(struct plans));
+    ret->next = net->plan; net->plan = ret;
+    return(1);
+}
+int ReadTestingPlan(struct slidingbuffer *bf, struct conf *config, struct nnet *net){
+    assert(bf != NULL); assert(config != NULL); assert (net != NULL);
+    struct plans buf; struct plans *ret = &buf;
+    if (!AcceptToken(bf, config, "TestingPlan")) return(0); else SkipToNext(bf, config);
+    ret->planflags = PLAN_TEST;
+    if (!AcceptToken(bf, config, "(")) ErrStopParsing(bf, "'TestingPlan' must be followed by an open parenthesis.", NULL); else SkipToNext(bf, config);
+    if (ReadTrReportFile(bf, config, ret)) SkipToNext(bf, config);
+    if (!AcceptToken(bf, config, ")")) ErrStopParsing(bf, "Testing Plans may have 'ReportTo' arguments, or end with closing parenthesis.", NULL);
+    ret = (struct plans *)malloc(sizeof(struct plans));
+    if (ret == NULL){fprintf(stderr, "Runtime Error: Allocation failure in ReadTestingPlan.\n"); exit(1);}
+    memcpy((void *)&buf, (void *)ret, sizeof(struct plans));
+    ret->next = net->plan; net->plan = ret;
+    return(1);
+}
+int ReadValidationPlan(struct slidingbuffer *bf, struct conf *config, struct nnet *net){
+    assert(bf != NULL); assert(config != NULL); assert (net != NULL);
+    struct plans buf; struct plans *ret = &buf;
+    if (!AcceptToken(bf, config, "ValidationPlan")) return(0); else SkipToNext(bf, config);
+    ret->planflags |= PLAN_VALIDATE;
+    if (!AcceptToken(bf, config, "(")) ErrStopParsing(bf, "'ValidationPlan' must be followed by an open parenthesis.", NULL); else SkipToNext(bf, config);
+    if (ReadTrReportFile(bf, config, ret)) SkipToNext(bf, config);
+    if (!AcceptToken(bf, config, ")")) ErrStopParsing(bf, "Validation Plans may have 'ReportTo' arguments, or end with closing parenthesis.", NULL);
+    ret = (struct plans *)malloc(sizeof(struct plans));
+    if (ret == NULL){fprintf(stderr, "Runtime Error: Allocation failure in ReadValidationPlan.\n"); exit(1);}
+    memcpy((void *)&bf, (void *)ret, sizeof(struct plans));
+    ret->next = net->plan; net->plan = ret;
+    return(1);
+}
+int ReadDeploymentPlan(struct slidingbuffer *bf, struct conf *config, struct nnet *net){
+    assert(bf != NULL); assert(config != NULL); assert (net != NULL);
+    struct plans buf; struct plans *ret = &buf;
+    if (!AcceptToken(bf, config, "DeploymentPlan")) return(0); else SkipToNext(bf, config);
+    ret->planflags |= PLAN_DEPLOY;
+    if (!AcceptToken(bf, config, "(")) ErrStopParsing(bf, "'DeploymentPlan' must be followed by an open parenthesis.", NULL); else SkipToNext(bf, config);
+    if (ReadTrReportFile(bf, config, ret)) SkipToNext(bf, config);
+    if (!AcceptToken(bf, config, ")")) ErrStopParsing(bf, "Deployment Plans may have 'ReportTo' arguments, and end with closing parenthesis.", NULL);
+    ret = (struct plans *)malloc(sizeof(struct plans));
+    if (ret == NULL){fprintf(stderr, "Runtime Error: Allocation failure in ReadDeploymentPlan.\n"); exit(1);}
+    memcpy((void *)&bf, (void *)ret, sizeof(struct plans));
+    ret->next = net->plan; net->plan = ret;
+    return(1);
+}
+int ReadPlanSection(struct slidingbuffer *bf, struct conf *config, struct nnet *net){
+    assert(bf != NULL); assert(config != NULL); assert(net != NULL);
+    if (!AcceptToken(bf, config, "StartPlan")) return (0); else SkipToNext(bf, config);
+    while(ReadTrainingPlan(bf, config, net) || ReadTestingPlan(bf, config, net) || ReadValidationPlan(bf, config, net) || ReadDeploymentPlan(bf, config, net))
+        SkipToNext(bf, config);
+    if (!AcceptToken(bf, config, "EndPlan")) ErrStopParsing(bf, "Expected 'TestPlan', 'TrainingPlan', 'ValidationPlan', 'DeploymentPlan',  or 'EndPlan'.",NULL);
+    return(1);
+}
+
+
+
 // Check at end of connections and add warning messages for questionable topology.
 
 int ValidateConnections(struct slidingbuffer *bf, struct conf *config, struct nnet *net){
-    assert(bf != NULL); assert (net != NULL);
+    assert(bf != NULL); assert(config != NULL); assert(net != NULL);
     int indexconn = 0;    int indexnode = 1;  char wstr[WARNSIZE];
     if ((config->flags & SILENCE_BIAS) == 0){
 	while (net->sources[indexconn] == 0 && indexconn++ < net->synapsecount);
-	if (indexconn == net->synapsecount) AddWarning(bf, "Warning:  Are you sure you wanted to define a network with no bias connections (connections with source 0)?");
+	if (indexconn == net->synapsecount)
+            AddWarning(bf, "Warning:  Are you sure you wanted to define a network with no bias connections (connections with source 0)?");
 	for (indexconn = 0; indexconn < net->synapsecount && net->dests[indexconn] != 0; indexconn++);
 	if (indexconn != net->synapsecount) AddWarning(bf, "Warning: Connections whose destination is the bias node (node zero) are being ignored.");
     }
@@ -1290,11 +1423,11 @@ int ValidateConnections(struct slidingbuffer *bf, struct conf *config, struct nn
 		switch(checkbuf[net->sources[indexconn]]){
 		case 0: checkbuf[net->dests[indexconn]] = 3; break;             case 1: checkbuf[net->dests[indexconn]] = 2; break;
 		case 4: checkbuf[net->dests[indexconn]] = 6; break;             case 5: checkbuf[net->dests[indexconn]] = 7; break;
-		default: break;}
+                }
 		switch(checkbuf[net->dests[indexconn]]){
 		case 0: checkbuf[net->dests[indexconn]] = 1; break;              case 2: checkbuf[net->dests[indexconn]] = 5; break;
 		case 3: checkbuf[net->dests[indexconn]] = 4; break;              case 6: checkbuf[net->dests[indexconn]] = 7; break;
-		default: break;}
+                }
 	    }
 	    for (indexnode = 0; indexnode < net->nodecount; indexnode++){
 		if((config->flags&SILENCE_MULTIACTIVATION)==0&&(checkbuf[indexnode]==7||(checkbuf[indexnode]>4&&indexnode>=net->nodecount-net->outputcount))){
@@ -1315,7 +1448,7 @@ int ValidateConnections(struct slidingbuffer *bf, struct conf *config, struct nn
 
 // Connection statements, until 'EndConnections'
 int ReadConnections(struct slidingbuffer *bf, struct conf *config, struct nnet *net){
-    assert(bf != NULL); assert (net != NULL);
+    assert(bf != NULL); assert(config != NULL); assert(net != NULL);
     SkipToNext(bf, config);
     if (!AcceptToken(bf, config, "StartConnections")) return (0);
     if (net->nodecount == 0) ErrStopParsing(bf, "Found 'StartConnections', expected 'StartNodes.' Nodes cannot be connected before they are defined.",NULL);
@@ -1348,20 +1481,15 @@ void debugnnet(struct nnet *net){
 }
 
 
-void nnetparser(struct nnet *net, struct conf *config, struct slidingbuffer *input){
-    assert(net != NULL); assert(input != NULL);
-    ReadOpeningComment(input, config);
-    //    ReadTrainingSection(net,config, input);
-    //    ReadDataSection(net,config,input);
-    SkipToNext(input, config);
-    if (!TokenAvailable(input, "StartNodes") && !TokenAvailable(input, "StartConnections") && !TokenAvailable(input, "StartConfig"))
-	ErrStopParsing(input, "Expected 'StartConfig', 'StartNodes' or 'StartConnections' statement.",NULL);
-    SkipToNext(input, config);
-    while (TokenAvailable(input, "StartConfig") || TokenAvailable(input, "StartNodes") || TokenAvailable(input, "StartConnections") ||
-           TokenAvailable(input, "StartData"))
-	if (!ReadNodeSection(input, config, net) && !ReadConnections(input, config, net) && !ReadConfigSection(input, config, net) &&
-            !ReadDataSection(input, config, net))
-	    ErrStopParsing(input, "Program Error in routine 'nnetparser'. ",NULL);
-	else SkipToNext(input, config);
+void nnetparser(struct nnet *net, struct conf *cfg, struct slidingbuffer *in){
+    assert(net != NULL); assert(cfg != NULL); assert(in != NULL);
+    ReadOpeningComment(in, cfg);
+    SkipToNext(in, cfg);
+    if (ReadConfigSection(in,cfg,net)||ReadNodeSection(in,cfg,net)||ReadConnections(in,cfg,net)||ReadPlanSection(in, cfg, net)||ReadDataSection(in, cfg, net))
+        while(ReadConfigSection(in,cfg,net)||ReadNodeSection(in,cfg,net)||ReadConnections(in,cfg,net)||ReadPlanSection(in, cfg, net)||ReadDataSection(in, cfg, net))
+            SkipToNext(in, cfg);
+    else ErrStopParsing(in, "Expected 'StartConfig', 'StartNodes', 'StartConnections', 'StartPlan', or 'StartData' statement.", NULL);
+    if (net->nodecount == 0) ErrStopParsing(in, "No nodes defined. A nonempty 'StartNodes' section is needed.",NULL);
+    if (net->synapsecount == 0) ErrStopParsing(in, "No connections defined. A nonempty 'StartConnections' section is needed.",NULL);
     printf("\n");
 }

@@ -46,10 +46,9 @@ int HandleOptions(int argc, char **argv){// name, args, NULL, returnval
     return (1);
 }
 
-// objectives: establish name for reading and default nonserialized name for writing.
-// readname should be arg (plus .nnet extension if .nnet extension isn't already present)
-// config->savename should be arg (without serial number and without .nnet extension), plus .out extension.
-// serial number if present in filename should be saved in config, else zero should be saved in config.
+// objectives: establish name for reading and default nonserialized name for writing.  readname should be arg (plus .nnet extension if .nnet extension isn't
+// already present) config->savename should be arg (without serial number and without .nnet extension), plus .out extension.  serial number if present in
+// filename should be saved in config, else zero should be saved in config.
 void GetFileNames(char* readname, struct conf *config, const char* arg){
     config->flags |= SAVE_DEFAULT;
     size_t index = 0; size_t serialstart = 0; size_t serialend = 0; size_t serial = 0; size_t len = strlen(arg);

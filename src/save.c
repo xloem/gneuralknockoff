@@ -145,16 +145,51 @@ void WriteImmediateCases(FILE *out, const struct cases *current){
 
 
 
-// Nnetwriter produces a script that, when read by the parser, produces a network with the same configuration, topology, weights, and firing sequence of the
-// network given as an argument.  All three of these things can be changed by various kinds of training, and there are different ways of expressing even the
+// Nnetwriter produces a script that, when read by the parser, produces a network with the same plan, configuration, topology, weights, data, firing sequence of
+// the network given as an argument.  All three of these things can be changed by various kinds of training, and there are different ways of expressing even the
 // same topology, so this may be different from the way the configfile originally wrote it.
 void nnetwriter(struct nnet *net, struct conf *config, FILE *out){
     assert(net != NULL); assert (out != NULL);
     int start, end, width, acc, xfer;
     struct cases *currentcase;
+    struct plans *currentplan;
     uint32_t currentmask;
     if (config->openingcomment != NULL) fprintf(out, "%s", config->openingcomment);
-    if (net->nodecount < 2) return;
+    if (net->plan != NULL){
+        fprintf(out, "StartPlan\n");
+        for (currentplan = net->plan; currentplan != NULL; currentplan = currentplan->next){
+            if (0 != (currentplan->planflags & PLAN_TRAIN)) {
+                fprintf(out, "    TrainingPlan(");
+                if (currentplan->planflags & PLAN_GRAD_DESCENT)       fprintf(out, "GradientDescent ");
+                else {fprintf(stderr,"Program Error: Unhandled case(1) in nnetwriter.\n"); exit(1);}
+                if (currentplan->goal != PLAN_DEFAULT_GOAL)           fprintf(out, "TrainingGoal "FLOFMT" ", currentplan->goal);
+                if (currentplan->trainrate != PLAN_DEFAULT_RATE)      fprintf(out, "LearningRate "FLOFMT" ", currentplan->trainrate);
+                if (currentplan->batchsize != 1)                      fprintf(out, "BatchSize %d ", currentplan->batchsize);
+                if (currentplan->epochmin != 0)                       fprintf(out, "EpochMin %d ", currentplan->epochmin);
+                if (currentplan->epochmax != PLAN_DEFAULT_MAXEP)      fprintf(out, "EpochMax %d ", currentplan->epochmax);
+                if (currentplan->reportdest != NULL)                  fprintf(out, "ReportTo \"%s\" ", currentplan->reportdest);
+                fprintf(out, ")\n");
+            }
+            else if (0 != (currentplan->planflags & PLAN_TEST)) {
+                fprintf(out, "    TestingPlan(");
+                if (currentplan->reportdest != NULL) fprintf(out, "ReportTo \"%s\" ",currentplan->reportdest);
+                fprintf(out, ")\n");
+            }
+            else if (0 != (currentplan->planflags & PLAN_VALIDATE)) {
+                fprintf(out, "    ValidationPlan(");
+                if (currentplan->reportdest != NULL) fprintf(out, "ReportTo \"%s\" ",currentplan->reportdest);
+                fprintf(out, ")\n");
+            }
+            else if (0 != (currentplan->planflags & PLAN_DEPLOY)) {
+                fprintf(out, "    DeploymentPlan(");
+                if (currentplan->reportdest != NULL) fprintf(out, "ReportTo \"%s\" ",currentplan->reportdest);
+                fprintf(out, ")\n");
+            }
+            else {fprintf(stderr, "Program Error: Unhandled case(1) in nnetwriter.\n"); exit(1);}
+        }
+        fprintf(out, "EndPlan\n");
+    }
+
     currentmask = (SILENCE_BIAS | SILENCE_DEBUG | SILENCE_ECHO | SILENCE_INPUT | SILENCE_OUTPUT | SILENCE_NODEINPUT |
                    SILENCE_NODEOUTPUT | SILENCE_MULTIACTIVATION | SILENCE_RECURRENCE | SILENCE_RENUMBER);
     if ((config->flags & currentmask) != 0 || (config->flags & SAVE_DEFAULT) != 0){
@@ -183,13 +218,13 @@ void nnetwriter(struct nnet *net, struct conf *config, FILE *out){
     }
 
     fprintf(out, "StartNodes\n");
-    for (start = end = 1; end < net->inputcount && end+1 < net->nodecount; start=++end){
+    for (start = end = 1; net->inputcount > 0 && end < net->inputcount && end+1 < net->nodecount; start=++end){
 	acc = net->accum[start]; xfer = net->transfer[start]; width = net->transferwidths[start];
 	while(end<net->inputcount && 1+end<net->nodecount && net->accum[end+1]==acc && net->transfer[end+1]==xfer && net->transferwidths[end+1]==width) end++;
 	if (width == 1) fprintf(out,"    CreateInput( %d, %s, %s)\n",1+end-start, acctokens[acc], outtokens[xfer] );
 	else fprintf(out,"    CreateInput( %d, %s, %s, %d)\n",1+end-start, acctokens[acc], outtokens[xfer], width);
     }
-    for (; end < net->nodecount - net->outputcount && end+1 < net->nodecount; start=++end){
+    for (; net->nodecount > 2 && end < net->nodecount - net->outputcount && end+1 < net->nodecount; start=++end){
 	acc = net->accum[start]; xfer = net->transfer[start]; width = net->transferwidths[start];
 	while(end+1 < net->nodecount - net->outputcount && end + 1 < net->nodecount && net->accum[end+1]==acc && net->transfer[end+1]==xfer &&
 	      net->transferwidths[end+1]==width) end++;
@@ -237,7 +272,7 @@ void nnetwriter(struct nnet *net, struct conf *config, FILE *out){
                 else fprintf(out, FLOFMT"\n", net->weights[start] );
                 if (end == net->synapsecount) state = 4;                     else {state = 0; conn = end+1;}
             case 4: break;
-            default: {fprintf(stderr, "Program error in while/switch stmt of netwriter.\n"); exit(1);}
+            default: {fprintf(stderr, "Program Error: Unhandled case(2) in nnetwriter.\n"); exit(1);}
 	}
         fprintf(out, "EndConnections\n");
     }
@@ -251,7 +286,7 @@ void nnetwriter(struct nnet *net, struct conf *config, FILE *out){
             case DATA_FROMFILE  :     fprintf(out, "FromFile ");       break;
             case DATA_FROMDIRECTORY:  fprintf(out, "FromDirectory ");  break;
             case DATA_FROMPIPE:       fprintf(out, "FromPipe ");       break;
-            default: fprintf(stderr, "Program Error: Network being saved has unrecognizable data source.\n"); exit(1);
+            default: fprintf(stderr, "Program Error: Unhandled case(3) in nnetwriter.\n"); exit(1);
             }
             if ((currentcase->flags & DATA_IMMEDIATE) == 0)                    fprintf(out, "\"%s\" ", currentcase->inname);
             if ((currentcase->flags & DATA_TRAINING) != 0)                     fprintf(out, "Training ");
@@ -264,7 +299,11 @@ void nnetwriter(struct nnet *net, struct conf *config, FILE *out){
             if ((currentcase->flags & DATA_NOWRITEOUTPUT) != 0)                fprintf(out, "WriteNoOutput ");
             if ((currentcase->flags & DATA_WRITEFILE) != 0)                    fprintf(out, "ToFile ");
             if ((currentcase->flags & DATA_WRITEPIPE) != 0)                    fprintf(out, "ToPipe ");
-            if ((currentcase->flags & (DATA_WRITEFILE | DATA_WRITEPIPE)) != 0) fprintf(out, "\"%s  \"", currentcase->outname);
+            if ((currentcase->flags & (DATA_WRITEFILE | DATA_WRITEPIPE)) != 0){
+                if (currentcase->outname == NULL){
+                    fprintf(stderr, "Program Error: in nnetwriter, found network with missing outname.\n"); exit(1);}
+                else fprintf(out, "\"%s  \"", currentcase->outname);
+            }
             if ((currentcase->flags & DATA_IMMEDIATE) != 0)                    WriteImmediateCases(out, currentcase);
             fprintf(out, ")\n");
         }
