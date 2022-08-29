@@ -20,8 +20,8 @@
 # these IDS are only incremental if inputs are first and outputs are last
 StartNodes
     CreateInput(1 None Identity)
-    CreateHidden(4 Linear Tanh) # need to identify names for LINEAR and TANH .. Add StepFunction?
-    CreateOutput(1 Linear Tanh)
+    CreateHidden(4 Multiply Tanh)
+    CreateOutput(1 Multiply Tanh)
 EndNodes
 
 # define the connections between neurons and their initial weights
@@ -99,5 +99,3 @@ StartData
         0.75 0.80 0.85 0.90 0.95
         1.0 ToFile "Results.nnx")
 
-# eventually save the neural network
-# SAVE_NEURAL_NETWORK network.net
