@@ -20,9 +20,9 @@ rather than a plan to reach completion.
 
 # examples
 
-When dev left off, the system was midway through migrating to a new format.
-The old tests still run.
+When dev left off, the system was midway through migrating from the gneural_network/*.input format to a new nnet/*.nnet format.
+The old gneural_network tests still run.
 
-$ autorecon && ./configure && make -j8
+$ autoreconf && ./configure && make -j8
 
 $ for test in tests/*.input; do src/gneural_network "$test"; done
