@@ -19,6 +19,6 @@
 
 #include <network.h>
 
-void msmco(network *, network_config *);
+void msmco (network *, network_config *);
 
 #endif

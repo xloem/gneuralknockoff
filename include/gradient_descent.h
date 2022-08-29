@@ -19,6 +19,6 @@
 
 #include <network.h>
 
-void gradient_descent(network *, network_config *);
+void gradient_descent (network *, network_config *);
 
 #endif

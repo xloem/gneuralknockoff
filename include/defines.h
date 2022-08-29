@@ -61,45 +61,50 @@ typedef double flotype;
 #define exponential(n) ((flotype)(exp((double)(n))))
 
 // definition of various internal types
-enum switch_flag {
-	OFF = (0 == 1),
-	ON = (1 == 1),
+enum switch_flag
+{
+  OFF = (0 == 1),
+  ON = (1 == 1),
 };
 
 // activation functions
-enum activation_function {
-	TANH,
-	EXP,
-	EXP_SIGNED,
-	SOFTSIGN,
-	RAMP,
-	SOFTRAMP,
-	ID,
-	POL1,
-	POL2,
+enum activation_function
+{
+  TANH,
+  EXP,
+  EXP_SIGNED,
+  SOFTSIGN,
+  RAMP,
+  SOFTRAMP,
+  ID,
+  POL1,
+  POL2,
 };
 
 // accumulators
-enum accumulator_function {
-	LINEAR,
-	LEGENDRE,
-	LAGUERRE,
-	FOURIER,
+enum accumulator_function
+{
+  LINEAR,
+  LEGENDRE,
+  LAGUERRE,
+  FOURIER,
 };
 
 // error/cost/target functions
-enum error_function {
-	MSE,
-	ME,
+enum error_function
+{
+  MSE,
+  ME,
 };
 
 // optimization methods
-enum optimization_method {
-	SIMULATED_ANNEALING,
-	RANDOM_SEARCH,
-	GRADIENT_DESCENT,
-	GENETIC_ALGORITHM,
-	MSMCO,
+enum optimization_method
+{
+  SIMULATED_ANNEALING,
+  RANDOM_SEARCH,
+  GRADIENT_DESCENT,
+  GENETIC_ALGORITHM,
+  MSMCO,
 };
 
 // flags for configuration to silence various outputs and warnings. (struct nnet ->flags)

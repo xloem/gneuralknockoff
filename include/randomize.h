@@ -22,8 +22,8 @@
 
 #include <network.h>
 
-void randomize(network *, network_config*);
+void randomize (network *, network_config *);
 
-double randomfloat(const double min, const double max);
+double randomfloat (const double min, const double max);
 
 #endif

@@ -19,70 +19,81 @@
 #include "includes.h"
 #include "feedforward.h"
 
-double error(network *nn, network_config *config){
- register int n;
- double err;
- double y;
+double
+error (network * nn, network_config * config)
+{
+  register int n;
+  double err;
+  double y;
 
- err = 0.;
+  err = 0.;
 
- switch (config->error_type) {
- // Mean Error
- case ME:
-   err = -1.e8;
-   for (n = 0; n < config->num_cases; n++) {
-    int i, j;
-    // assign training input
-    for (i = 0; i < nn->layers[0].num_of_neurons; i++) {
-     neuron *ne = &nn->layers[0].neurons[i];
+  switch (config->error_type)
+    {
+      // Mean Error
+    case ME:
+      err = -1.e8;
+      for (n = 0; n < config->num_cases; n++)
+        {
+          int i, j;
+          // assign training input
+          for (i = 0; i < nn->layers[0].num_of_neurons; i++)
+            {
+              neuron *ne = &nn->layers[0].neurons[i];
 #if 1
-     ne->output = config->cases_x[n][ne->global_id][0];
+              ne->output = config->cases_x[n][ne->global_id][0];
 #else
-     for (j = 0; j < ne->num_input; j++)
-      ne->output = config->cases_x[n][i][j];
+              for (j = 0; j < ne->num_input; j++)
+                ne->output = config->cases_x[n][i][j];
 #endif
-    }
-    feedforward(nn);
-    // compute the mean error comparing with training output
-    double tmp = 0.;
-    for (j = 0; j < nn->layers[nn->num_of_layers-1].num_of_neurons; j++){
-     neuron *ne = &nn->layers[nn->num_of_layers-1].neurons[j];
-     y = ne->output;
-     tmp += fabs(y-config->cases_y[n][ne->global_id]);
-    }
-    err += tmp;
-   }
-   return err;
+            }
+          feedforward (nn);
+          // compute the mean error comparing with training output
+          double tmp = 0.;
+          for (j = 0; j < nn->layers[nn->num_of_layers - 1].num_of_neurons;
+               j++)
+            {
+              neuron *ne = &nn->layers[nn->num_of_layers - 1].neurons[j];
+              y = ne->output;
+              tmp += fabs (y - config->cases_y[n][ne->global_id]);
+            }
+          err += tmp;
+        }
+      return err;
 
-   break;
-  // Mean Squared Error
-  case MSE:
-   for (n = 0; n < config->num_cases; n++){
-    int i, j;
-    // assign training input
-    for (i = 0; i < nn->layers[0].num_of_neurons; i++){
-     neuron *ne = &nn->layers[0].neurons[i];
+      break;
+      // Mean Squared Error
+    case MSE:
+      for (n = 0; n < config->num_cases; n++)
+        {
+          int i, j;
+          // assign training input
+          for (i = 0; i < nn->layers[0].num_of_neurons; i++)
+            {
+              neuron *ne = &nn->layers[0].neurons[i];
 #if 1
-     ne->output = config->cases_x[n][ne->global_id][0];
+              ne->output = config->cases_x[n][ne->global_id][0];
 #else
-     for (j = 0; j < ne->num_input; j++)
-      ne->output = config->cases_x[n][i][j];
+              for (j = 0; j < ne->num_input; j++)
+                ne->output = config->cases_x[n][i][j];
 #endif
+            }
+          feedforward (nn);
+          // compute the squared error comparing with the training output
+          double tmp = 0.;
+          for (j = 0; j < nn->layers[nn->num_of_layers - 1].num_of_neurons;
+               j++)
+            {
+              neuron *ne = &nn->layers[nn->num_of_layers - 1].neurons[j];
+              y = ne->output;;
+              tmp += pow (y - config->cases_y[n][ne->global_id], 2);
+            }
+          err += tmp;
+        }
+      return sqrt (err);
+      break;
+    default:
+      return 0.;
+      break;
     }
-    feedforward(nn);
-    // compute the squared error comparing with the training output
-    double tmp = 0.;
-    for (j = 0; j < nn->layers[nn->num_of_layers-1].num_of_neurons; j++){
-     neuron *ne = &nn->layers[nn->num_of_layers-1].neurons[j];
-     y = ne->output;;
-     tmp += pow(y - config->cases_y[n][ne->global_id], 2);
-    }
-    err += tmp;
-   }
-   return sqrt(err);
-   break;
-  default:
-   return 0.;
-   break;
- }
 }

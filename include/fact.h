@@ -19,6 +19,6 @@
 #include "includes.h"
 #include "defines.h"
 
-uint64_t fact(uint32_t);
+uint64_t fact (uint32_t);
 
 #endif

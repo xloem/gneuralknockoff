@@ -20,12 +20,15 @@
 
 #include "fact.h"
 
-inline uint64_t fact(uint32_t n){
- uint64_t res=1;
+inline uint64_t
+fact (uint32_t n)
+{
+  uint64_t res = 1;
 
- while(n){
-  res*=n;
-  --n;
- }
- return(res);
+  while (n)
+    {
+      res *= n;
+      --n;
+    }
+  return (res);
 }

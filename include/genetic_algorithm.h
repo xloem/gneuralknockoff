@@ -19,6 +19,6 @@
 
 #include <network.h>
 
-void genetic_algorithm(network *, network_config *);
+void genetic_algorithm (network *, network_config *);
 
 #endif

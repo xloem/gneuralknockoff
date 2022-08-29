@@ -33,134 +33,147 @@
 #include "load.h"
 #include "save.h"
 
-static const struct option longopts[] =
-{
-  { "version", no_argument, NULL, 'v' },
-  { "help", no_argument, NULL, 'h' }
+static const struct option longopts[] = {
+  {"version", no_argument, NULL, 'v'},
+  {"help", no_argument, NULL, 'h'}
 };
 
-int main(int argc,char* argv[])
+int
+main (int argc, char *argv[])
 {
- int optc;
- int h=0,v=0,lose=0,z=0;
- char *progname;
- FILE *fp = NULL;
+  int optc;
+  int h = 0, v = 0, lose = 0, z = 0;
+  char *progname;
+  FILE *fp = NULL;
 
- network *nn = network_alloc();
- if (!nn)
-	exit(-1);
+  network *nn = network_alloc ();
+  if (!nn)
+    exit (-1);
 
- network_config *config = network_config_alloc_default();
- if (!config) {
-	network_free(nn);
-	exit(-1);
- }
- progname=argv[0];
+  network_config *config = network_config_alloc_default ();
+  if (!config)
+    {
+      network_free (nn);
+      exit (-1);
+    }
+  progname = argv[0];
 
- while((optc=getopt_long(argc,argv,"hv",longopts,(int *) 0))!= EOF)
-  switch (optc){
-   case 'v':
-    v=1;
-    break;
-   case 'h':
-    h=1;
-    break;
-   default:
-    lose=1;
-    break;
-  }
+  while ((optc = getopt_long (argc, argv, "hv", longopts, (int *) 0)) != EOF)
+    switch (optc)
+      {
+      case 'v':
+        v = 1;
+        break;
+      case 'h':
+        h = 1;
+        break;
+      default:
+        lose = 1;
+        break;
+      }
 
-  if(optind==argc-1) z=1;
-  else if(lose || optind < argc){
-   // dump an error message and exit.
-   if (optind<argc) printf("Too many arguments\n");
-   printf("Try `%s --help' for more information.\n",progname);
-   exit(1);
-  }
+  if (optind == argc - 1)
+    z = 1;
+  else if (lose || optind < argc)
+    {
+      // dump an error message and exit.
+      if (optind < argc)
+        printf ("Too many arguments\n");
+      printf ("Try `%s --help' for more information.\n", progname);
+      exit (1);
+    }
 
   // `help' should come first.  If `help' is requested, ignore the other options.
-  if(h){
-   /* Print help info and exit.  */
-   /* TRANSLATORS: --help output 1
-      no-wrap */
-   printf("\
+  if (h)
+    {
+      /* Print help info and exit.  */
+      /* TRANSLATORS: --help output 1
+         no-wrap */
+      printf ("\
 Gneural Network, the GNU package for neural networks.\nCopyright (C) 2016 Jean Michel Sellier.\n");
-   printf ("\n");
-   /* TRANSLATORS: --help output 2
-      no-wrap */
-   printf ("\
-Usage: %s [OPTION] file...\n",progname);
+      printf ("\n");
+      /* TRANSLATORS: --help output 2
+         no-wrap */
+      printf ("\
+Usage: %s [OPTION] file...\n", progname);
 
-   printf ("\n");
-   /* TRANSLATORS: --help output 3 : options 1/2
-      no-wrap */
-   printf("\
+      printf ("\n");
+      /* TRANSLATORS: --help output 3 : options 1/2
+         no-wrap */
+      printf ("\
   -h, --help          display this help and exit\n\
   -v, --version       display version information and exit\n");
 
-   printf ("\n");
-   /* TRANSLATORS: --help output 5 (end)
-      TRANSLATORS, please don't forget to add the contact address for
-      your translation!
-      no-wrap */
-   printf ("\
+      printf ("\n");
+      /* TRANSLATORS: --help output 5 (end)
+         TRANSLATORS, please don't forget to add the contact address for
+         your translation!
+         no-wrap */
+      printf ("\
 Report bugs to jeanmichel.sellier@gmail.com\n");
       exit (0);
     }
 
-  if(v){
-   /* Print version number.  */
-   printf("gneural_network - Gneural Network 0.9.1\n");
-   /* xgettext: no-wrap */
-   printf("\n");
-   printf("\
+  if (v)
+    {
+      /* Print version number.  */
+      printf ("gneural_network - Gneural Network 0.9.1\n");
+      /* xgettext: no-wrap */
+      printf ("\n");
+      printf ("\
 Copyright (C) %s Jean Michel Sellier.\n\n\
 There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A\n\
 PARTICULAR PURPOSE.\n\
 You may redistribute copies of GNU %s under the terms\n\
 of the GNU General Public License.\n\
-For more information about these matters, see the file named COPYING.\n",
-"2016-2017","Gneural Network");
-   exit (0);
-  }
-  else if (z){
-   // if the filename is specified then proceed with parsing the script and then run the calculations
-   fp=fopen(argv[1],"r");
-   // check, just in case the file does not exist...
-   if(fp==NULL){
-    printf("%s: fatal error in opening the input file %s\n",
-           progname,argv[1]);
-    exit(EXIT_FAILURE);
-   }
-   parser(nn, config, fp);
-   fclose(fp);
+For more information about these matters, see the file named COPYING.\n", "2016-2017", "Gneural Network");
+      exit (0);
+    }
+  else if (z)
+    {
+      // if the filename is specified then proceed with parsing the script and then run the calculations
+      fp = fopen (argv[1], "r");
+      // check, just in case the file does not exist...
+      if (fp == NULL)
+        {
+          printf ("%s: fatal error in opening the input file %s\n",
+                  progname, argv[1]);
+          exit (EXIT_FAILURE);
+        }
+      parser (nn, config, fp);
+      fclose (fp);
 
-   if (config->load_neural_network == OFF) {
-    // assigns weights randomly for each neuron
-    // before the training process
-    if (config->initial_weights_randomization == ON)
-     randomize(nn, config);
+      if (config->load_neural_network == OFF)
+        {
+          // assigns weights randomly for each neuron
+          // before the training process
+          if (config->initial_weights_randomization == ON)
+            randomize (nn, config);
 
-    // network training method
-    network_run_algorithm(nn, config);
+          // network training method
+          network_run_algorithm (nn, config);
 
-    if (config->save_neural_network == ON)
-	network_save(nn, config);
-   } else
-	// load the neural network
-	network_load(nn, config);
+          if (config->save_neural_network == ON)
+            network_save (nn, config);
+        }
+      else
+        // load the neural network
+        network_load (nn, config);
 
-   if (config->save_output == ON){
-    printf("saving the final curve\n");
-    network_save_final_curve(nn, config);
-   }
-  } else {
-   // filename not specified
-   printf("%s: no input file\n",progname);
-   exit(-1);
-  }
+      if (config->save_output == ON)
+        {
+          printf ("saving the final curve\n");
+          network_save_final_curve (nn, config);
+        }
+    }
+  else
+    {
+      // filename not specified
+      printf ("%s: no input file\n", progname);
+      exit (-1);
+    }
 
- network_free(nn);
- network_config_free(config);
- return 0;
+  network_free (nn);
+  network_config_free (config);
+  return 0;
 }

@@ -19,16 +19,26 @@
 #include "randomize.h"
 #include "rnd.h"
 
-void randomize(network *nn, network_config *config){
- register int i, n;
+void
+randomize (network * nn, network_config * config)
+{
+  register int i, n;
 
- /* for each neuron in the network */
- for (n = 0; n < nn->num_of_neurons; n++)
-  /* for each input in the neuron */
-  for (i = 0; i < nn->neurons[n].num_input; i++) {
-   nn->neurons[n].w[i] = config->wmin + rnd()*(config->wmax - config->wmin);
- }
+  /* for each neuron in the network */
+  for (n = 0; n < nn->num_of_neurons; n++)
+    /* for each input in the neuron */
+    for (i = 0; i < nn->neurons[n].num_input; i++)
+      {
+        nn->neurons[n].w[i] =
+          config->wmin + rnd () * (config->wmax - config->wmin);
+      }
 }
 
 // returns a random float (using random()) between min and max.
-double randomfloat(const double min, const double max){if (max < min) return randomfloat(max,min); return (min + ((double) random() / RAND_MAX) * (max - min));}
+double
+randomfloat (const double min, const double max)
+{
+  if (max < min)
+    return randomfloat (max, min);
+  return (min + ((double) random () / RAND_MAX) * (max - min));
+}

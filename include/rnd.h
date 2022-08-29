@@ -16,6 +16,6 @@
 #ifndef RND_H
 #define RND_H
 
-double rnd(void);
+double rnd (void);
 
 #endif

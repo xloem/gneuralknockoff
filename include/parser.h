@@ -34,20 +34,21 @@
 
 
 #define BFLEN 128
-struct slidingbuffer {
-    FILE *input;
-    int head;
-    int end;
-    int line;
-    int col;
-    char *warnings;
-    char buffer[BFLEN];
+struct slidingbuffer
+{
+  FILE *input;
+  int head;
+  int end;
+  int line;
+  int col;
+  char *warnings;
+  char buffer[BFLEN];
 };
 
 
-void parser(network *, network_config*, FILE *);
-void PrintWarnings(struct slidingbuffer *);
-void nnetparser(struct nnet *, struct conf *, struct slidingbuffer *);
-void debugnnet(struct nnet *net);
+void parser (network *, network_config *, FILE *);
+void PrintWarnings (struct slidingbuffer *);
+void nnetparser (struct nnet *, struct conf *, struct slidingbuffer *);
+void debugnnet (struct nnet *net);
 
 #endif

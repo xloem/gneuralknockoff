@@ -19,6 +19,6 @@
 
 #include <network.h>
 
-void feedforward(network *);
+void feedforward (network *);
 
 #endif

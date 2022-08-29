@@ -19,6 +19,6 @@
 
 #include "defines.h"
 
-double activation(enum activation_function,double);
+double activation (enum activation_function, double);
 
 #endif

@@ -18,6 +18,6 @@
 
 #include <network.h>
 
-void network_load(network *, network_config *);
+void network_load (network *, network_config *);
 
 #endif

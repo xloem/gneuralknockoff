@@ -18,11 +18,12 @@
 #include "includes.h"
 #include "rnd.h"
 
-inline double rnd(void) {
- static int ISEED = 38467.;
+inline double
+rnd (void)
+{
+  static int ISEED = 38467.;
 
- ISEED = fmod(1027.*ISEED,1048576.);
+  ISEED = fmod (1027. * ISEED, 1048576.);
 
- return ISEED / 1048576.;
+  return ISEED / 1048576.;
 }
-

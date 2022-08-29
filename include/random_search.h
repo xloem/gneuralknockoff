@@ -18,6 +18,6 @@
 
 #include <network.h>
 
-void random_search(network *nn, network_config *config);
+void random_search (network * nn, network_config * config);
 
 #endif

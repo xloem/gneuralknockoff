@@ -20,9 +20,9 @@
 #include <stdio.h>
 #include "network.h"
 
-void network_save(network *, network_config *);
+void network_save (network *, network_config *);
 
-void network_save_final_curve(network *, network_config *);
+void network_save_final_curve (network *, network_config *);
 
-void nnetwriter(struct nnet *, struct conf *, FILE *);
+void nnetwriter (struct nnet *, struct conf *, FILE *);
 #endif

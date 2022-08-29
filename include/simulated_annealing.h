@@ -18,6 +18,6 @@
 
 #include <network.h>
 
-void simulated_annealing(network *, network_config*);
+void simulated_annealing (network *, network_config *);
 
 #endif

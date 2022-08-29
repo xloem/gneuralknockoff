@@ -21,11 +21,14 @@
 // originally programmed by : Jean Michel Sellier
 // improved by              : Gergo Barany
 
-inline int binom(int n,int k){
- double res=1;
- register int i;
- for(i=1;i<=k;i++){
-  res*=(double)(n+1-i)/i;
- }
- return(round(res));
+inline int
+binom (int n, int k)
+{
+  double res = 1;
+  register int i;
+  for (i = 1; i <= k; i++)
+    {
+      res *= (double) (n + 1 - i) / i;
+    }
+  return (round (res));
 }
