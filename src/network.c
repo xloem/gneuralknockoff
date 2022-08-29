@@ -484,8 +484,8 @@ InsertNodes (struct nnet *net, int startloc, int newcount, int transferfn,
       net->inputcount++;
       startloc++;
     }
-  int *newtrans = (int *) malloc ((net->nodecount + newcount) * sizeof (int));
-  int *newacc = (int *) malloc ((net->nodecount + newcount) * sizeof (int));
+  enum activation_function *newtrans = (enum activation_function *) malloc ((net->nodecount + newcount) * sizeof (int));
+  enum accumulator_function *newacc = (enum accumulator_function *) malloc ((net->nodecount + newcount) * sizeof (int));
   unsigned int *xwidth =
     (unsigned int *) malloc ((net->nodecount + newcount) * sizeof (int));
   int count;
@@ -602,7 +602,7 @@ void
 AddRandomizedConnections (struct nnet *net, int fromstart, int fromend,
                           int tostart, int toend)
 {
-  int wt = 0;
+  // int wt = 0;
   int newcount =
     net->synapsecount + (1 + fromend - fromstart) * (1 + toend - tostart);
   net->weights =

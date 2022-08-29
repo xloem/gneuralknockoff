@@ -55,8 +55,8 @@ struct nnet
   unsigned int inputcount;      // nodes 1 to this number (inclusive) are inputs (node zero is reserved for bias).
   unsigned int outputcount;     // nodes (nodecount minus this number) to nodecount (exclusive) are outputs.
   unsigned int nodecount;       // this many total nodes.
-  int *transfer;                // each node has its own transfer function.
-  int *accum;                   // each node has its own accumulation function. (addition assumed if NULL)
+  enum activation_function *transfer; // each node has its own transfer function.
+  enum accumulator_function *accum; // each node has its own accumulation function. (addition assumed if NULL)
   unsigned int *transferwidths; // One record per node of how many nodes are to be processed by the transfer fn when
   // processing this node.  transfer width is assumed to be one if this is left NULL.
   // In wide transfers only the entry corresponding to the first node will be read.

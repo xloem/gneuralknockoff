@@ -17,25 +17,44 @@
 #include "includes.h"
 #include "load.h"
 
+#include <stdarg.h>
+
+intptr_t exit_if (intptr_t return_value, intptr_t error_value, char const * fmt, ...)
+{
+  if (return_value == error_value)
+    {
+      char message[512];
+      va_list args;
+
+      va_start (args, fmt);
+      vsnprintf (message, sizeof(message), fmt, args);
+      va_end (args);
+
+      perror (message);
+
+      exit (-1);
+    }
+  return return_value;
+}
+
+
 void
 network_load (network * nn, network_config * config)
 {
   int output = config->verbosity;       /* screen output - on/off */
   // load a network that has been previously saved
   int i, j;
-  int ret;
   double tmp;
   FILE *fp;
 
-  fp = fopen (config->load_network_file_name, "r");
-  if (fp == NULL)
-    {
-      printf ("cannot open file %s!\n", config->load_network_file_name);
-      exit (-1);
-    }
+  fp = (FILE*) exit_if (
+    (intptr_t) fopen (config->load_network_file_name, "r"),
+    (intptr_t) NULL,
+    "cannot open file %s!", config->load_network_file_name
+  );
 
   // saves the description of every single neuron
-  ret = fscanf (fp, "%lf\n", &tmp);     // total number of neurons
+  exit_if (fscanf (fp, "%lf\n", &tmp), EOF, "total number of neurons");
 
   /* set the neuron number and alloc the required memory */
   network_set_neuron_number (nn, (unsigned int) tmp);
@@ -43,44 +62,44 @@ network_load (network * nn, network_config * config)
   for (i = 0; i < nn->num_of_neurons; i++)
     {
       neuron *ne = &nn->neurons[i];
-      ret = fscanf (fp, "%lf\n", &tmp); // neuron index - useless
-      ret = fscanf (fp, "%lf\n", &tmp); // number of input connections (weights)
+      exit_if (fscanf (fp, "%lf\n", &tmp), EOF, "neuron index - useless");
+      exit_if (fscanf (fp, "%lf\n", &tmp), EOF, "number of input connections (weights");
 
       ne->num_input = (int) (tmp);
 
       for (j = 0; j < ne->num_input; j++)
         {
-          ret = fscanf (fp, "%lf\n", &tmp);
+          exit_if (fscanf (fp, "%lf\n", &tmp), EOF, "neuron i=%d j=%d", i, j);
           ne->w[j] = tmp;       // set the 'j-th'weight in the 'i-th' neuron
         }
 
       for (j = 0; j < ne->num_input; j++)
         {
-          ret = fscanf (fp, "%lf\n", &tmp);     // connections to other neurons
+          exit_if (fscanf (fp, "%lf\n", &tmp), EOF, "connections to other neurons i=%d j=%d", i, j);
           ne->connection[j] = &nn->neurons[(int) (tmp)];
 //   NEURON[i].connection[j]=(int)(tmp);
         }
-      ret = fscanf (fp, "%lf\n", &tmp); // activation function
+      exit_if (fscanf (fp, "%lf\n", &tmp), EOF, "activation function %d", i);
       ne->activation = (int) (tmp);
 
-      ret = fscanf (fp, "%lf\n", &tmp); // accumulator function
+      exit_if (fscanf (fp, "%lf\n", &tmp), EOF, "accumulator function %d", i);
       ne->accumulator = (int) (tmp);
     }
 
   // saves the network topology
-  ret = fscanf (fp, "%lf\n", &tmp);     // total number of layers (including input and output layers)
+  exit_if (fscanf (fp, "%lf\n", &tmp), EOF, "total number of layers (including input and output layers)");
   network_set_layer_number (nn, (int) (tmp));
 
   for (i = 0; i < nn->num_of_layers; i++)
     {
       layer *le = &nn->layers[i];
-      ret = fscanf (fp, "%lf\n", &tmp); // total number of neurons in the i-th layer
+      exit_if (fscanf (fp, "%lf\n", &tmp), EOF, "total number of neurons in the %d-th layer", i);
       le->num_of_neurons = (unsigned long) tmp;
 
       for (j = 0; j < le->num_of_neurons; j++)
         {
-          ret = fscanf (fp, "%lf\n", &tmp);     // global id neuron of every neuron in the i-th layer
-          if (!j)               /* set only the first neuron in the layer... the following neuron are contigues... */
+          exit_if (fscanf (fp, "%lf\n", &tmp), EOF, "global id neuron of %d-th neuron in the %d-th layer", j, i);
+          if (!j)               /* set only the first neuron in the layer... the following neuron are contigues... */ /* TODO: file contains ignored topology */
             le->neurons = &nn->neurons[(int) tmp];
 //   NETWORK.neuron_id[i][j]=(int)(tmp);
         }

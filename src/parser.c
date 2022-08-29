@@ -815,7 +815,7 @@ processing the input file\n\
             break;
           }                     /* close switch(token_id) */
         }
-      sprintf (s, "");          // empty the buffer
+      s[0] = '\0';              // empty the buffer
     }
   while (!feof (fp));
 }

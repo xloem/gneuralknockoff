@@ -18,6 +18,9 @@
 #define ERROR_H
 #include "network.h"
 
-double error (struct _network *, struct _network_config *);
+typedef struct _network network;
+typedef struct _network_config network_config;
+
+double error (network *, network_config *);
 
 #endif
