@@ -575,7 +575,7 @@ processing the input file\n\
     {
       // read the current row
       ret = fscanf (fp, "%254s", s);
-      if (ret == 0)
+      if (ret < 0)
         return;
 
       token_id = find_id (s, "Token", main_token_n, main_token_count);
