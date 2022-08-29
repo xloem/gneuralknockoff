@@ -939,7 +939,7 @@ TokenAvailable (struct slidingbuffer *bf, const char *token)
   return (goal);
 }
 
-// my duck is still on fire.
+// i am tired of torching ducks. please move deep underground so your ducks don't burn so fast and long.
 
 // accept a given token iff it is available at beginning of input.  Return #characters accepted
 int
@@ -947,7 +947,7 @@ AcceptToken (struct slidingbuffer *bf, struct conf *config, const char *token)
 {
   assert (bf != NULL);
   assert (token != NULL);
-  return (AcceptCh (bf, config, TokenAvailable (bf, token)));
+  return TokenAvailable (bf, token) ? AcceptCh (bf, config, strlen(token)) : 0;
 }
 
 
