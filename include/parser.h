@@ -21,16 +21,16 @@
 #include "network.h"
 
 // The number of different accumulator functions
-#define ACCUMCOUNT 8
+#define ACCUMCOUNT 11
 // the names of the accumulator functions
-#define ACCTOKENS "None","Add","Multiply","SoftLimit","Magnitude","SoftLog","Maximum","Onesided"
+#define ACCTOKENS "None","Add","Multiply","SoftLimit","Magnitude","SoftLog","Maximum","Onesided","Legendre","Laguerre","Fourier"
 
 // the number of different output function names
-#define OUTPUTCOUNT 16
+#define OUTPUTCOUNT 18
 // the first SINGLEOUTPUTS function names are for output functions that operate on exactly one node.
-#define SINGLEOUTPUTS 14
+#define SINGLEOUTPUTS 16
 #define OUTTOKENS "Identity","Tanh","Arctan","Logistic","SignedLogistic","Softsign","Logarithmic","StepFunction", "ReLU","SoftPlus",\
-"LogRectifier","Periodic","Gaussian","Spline","ParallelMult","ParallelMath"
+"LogRectifier","Periodic","Gaussian","Spline","Pol1","Pol2","ParallelMult","ParallelMath"
 
 
 #define BFLEN 128

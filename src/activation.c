@@ -24,26 +24,44 @@ activation (enum activation_function type, double x)
 {
   switch (type)
     {
+    case ID:
+      return x;
+      break;
     case TANH:                 // scaled from -1 to 1
       return tanh (x);
+      break;
+    case ATAN:                 // scaled from -1 to 1
+      return atan (x) * M_2_PI;
       break;
     case EXP:                  // scaled from 0 to 1
       return 1. / (1. + exp (-x));
       break;
-    case ID:
-      return x;
-      break;
     case EXP_SIGNED:           // scaled from -1 to 1
       return 2. / (1. + exp (-x)) - 1.;
       break;
+    case LOGARITHMIC:
+      return -log (1 + exp (-x));
+      break;
     case SOFTSIGN:             // scaled from -1 to 1
       return x / abs (x) + 1;
+      break;
+    case STEP:                 // scaled from 0 to 1
+      return x >= 0 ? 1 : 0;
       break;
     case RAMP:
       return (x > 0.) ? x : 0.;
       break;
     case SOFTRAMP:
       return log (1. + exp (x));
+      break;
+    case LOGRAMP:
+      return (x > 0.) ? log (x) : 0.;
+      break;
+    case PERIODIC:
+      return sin (x);
+      break;
+    case GAUSSIAN:
+      return exp (-x * x);
       break;
     case POL1:
       return 1. + x;
