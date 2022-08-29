@@ -939,8 +939,6 @@ TokenAvailable (struct slidingbuffer *bf, const char *token)
   return (goal);
 }
 
-// i am tired of torching ducks. please move deep underground so your ducks don't burn so fast and long.
-
 // accept a given token iff it is available at beginning of input.  Return #characters accepted
 int
 AcceptToken (struct slidingbuffer *bf, struct conf *config, const char *token)
@@ -1306,6 +1304,7 @@ ReadCreateNodeStmt (struct slidingbuffer *bf, struct conf *config,
                    "Program Error: warnstring too small to hold list of input functions in ReadCreateNodeStmt.\n");
           exit (1);
         }
+      ErrStopParsing (bf, warnstring, NULL);
     }
   if (in_hid_out == 3 && (strcmp (acctokens[Accum], "None") == 0))
     AddWarning (bf,
@@ -1327,7 +1326,7 @@ ReadCreateNodeStmt (struct slidingbuffer *bf, struct conf *config,
           snprintf (&(warnstring[printed]), WARNSIZE - printed, " %s",
                     outtokens[ct]);
       snprintf (&(warnstring[printed]), WARNSIZE - printed, ".");
-      if (ct != ACCUMCOUNT)
+      if (ct != OUTPUTCOUNT)
         {
           fprintf (stderr,
                    "Program Error: warnstring too small to hold list of activation functions in ReadCreateNodeStmt.\n");
