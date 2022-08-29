@@ -126,7 +126,7 @@ combine (const int combiner, const flotype currentval, const flotype ad)
 
 // return the identity element for the combiner - same numeric aliases for combiners as in the fn above. Routine by Ray
 // D. 6 September 2016
-inline flotype
+static inline flotype
 identity (const int combiner)
 {
   return (combiner == 1) ? ONE : ZERO;
