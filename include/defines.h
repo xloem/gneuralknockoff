@@ -70,36 +70,21 @@ enum switch_flag
 // activation functions
 enum activation_function
 {
-  ID,
   TANH,
-  ATAN,
   EXP,
   EXP_SIGNED,
   SOFTSIGN,
-  LOGARITHMIC,
-  STEP,
   RAMP,
   SOFTRAMP,
-  LOGRAMP,
-  PERIODIC,
-  GAUSSIAN,
-  SPLINE,
+  ID,
   POL1,
   POL2,
-  PARALLELMULT,
-  PARALLELMATH,
 };
 
 // accumulators
 enum accumulator_function
 {
-  NONE,
-  ADD,
   LINEAR,
-  SOFTLIMIT,
-  MAGNITUDE,
-  MAXIMUM,
-  ONESIDED,
   LEGENDRE,
   LAGUERRE,
   FOURIER,
