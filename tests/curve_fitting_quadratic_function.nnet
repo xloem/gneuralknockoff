@@ -45,6 +45,10 @@ StartData
         [[1.0 0.80] [0.64]] )
 EndData
 
+StartPlan
+    TrainingPlan(GradientDescent) #BatchSize n LearningRate n.n MaxEpochs n MinEpochs n ReportTo "file" TrainingGoal n.n
+    DeploymentPlan(ReportTo "deployment.out")
+EndPlan
 # space search for the weights
 #WEIGHT_MINIMUM -2.5
 #WEIGHT_MAXIMUM +2.5
