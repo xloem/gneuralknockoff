@@ -2397,16 +2397,16 @@ ValidateConnections (struct slidingbuffer *bf, struct conf *config,
               switch (checkbuf[net->sources[indexconn]])
                 {
                 case 0:
-                  checkbuf[net->dests[indexconn]] = 3;
+                  checkbuf[net->sources[indexconn]] = 3;
                   break;
                 case 1:
-                  checkbuf[net->dests[indexconn]] = 2;
+                  checkbuf[net->sources[indexconn]] = 2;
                   break;
                 case 4:
-                  checkbuf[net->dests[indexconn]] = 6;
+                  checkbuf[net->sources[indexconn]] = 6;
                   break;
                 case 5:
-                  checkbuf[net->dests[indexconn]] = 7;
+                  checkbuf[net->sources[indexconn]] = 7;
                   break;
                 }
               switch (checkbuf[net->dests[indexconn]])
