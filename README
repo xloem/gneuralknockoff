@@ -1,16 +1,5 @@
 This is a fork of Gneural Network that has not been decommissioned.
 
-https://web.archive.org/web/20210916155331/http://www.gnu.org/software/gneuralnetwork/
-
-> This project has been decommissioned. This web page is kept here for historical purposes only.
-
-https://web.archive.org/web/20211227183603/http://savannah.gnu.org/projects/gneuralnetwork
-
-> GNU Gneural Network has been decommissioned.
-
-I am tired of igniting ducks. Please move deep underground so your ducks don't
-burn so fast and long.
-
 I would hope to make a modular library of neural network components capable of
 training and inference of modern machine learning models like those in the
 news.
@@ -33,3 +22,16 @@ It looks like .nnet script parsing is mostly implemented, as well as fwdprop()
 in src/forward.c, to run a new-style network. I don't, however, see that
 fwdprop() is called anywhere. Likely it needs some debugging before everything
 is plugged together.
+
+# gneural network was decommissioned?
+
+https://web.archive.org/web/20210916155331/http://www.gnu.org/software/gneuralnetwork/
+
+> This project has been decommissioned. This web page is kept here for historical purposes only.
+
+https://web.archive.org/web/20211227183603/http://savannah.gnu.org/projects/gneuralnetwork
+
+> GNU Gneural Network has been decommissioned.
+
+I am tired of igniting ducks. Please move deep underground so your ducks don't
+burn so fast and long.
