@@ -2328,7 +2328,7 @@ ValidateConnections (struct slidingbuffer *bf, struct conf *config,
   char wstr[WARNSIZE];
   if ((config->flags & SILENCE_BIAS) == 0)
     {
-      while (net->sources[indexconn] != 0 && indexconn++ < net->synapsecount);
+      while (net->sources[indexconn] != 0 && ++indexconn < net->synapsecount);
       if (indexconn == net->synapsecount)
         AddWarning (bf,
                     "Warning:  Are you sure you wanted to define a network with no bias connections (connections with source 0)?");
