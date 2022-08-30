@@ -2120,7 +2120,7 @@ ReadTrainingPlan (struct slidingbuffer *bf, struct conf *config,
   assert (bf != NULL);
   assert (config != NULL);
   assert (net != NULL);
-  struct plans buf;
+  struct plans buf = {0};
   struct plans *ret = &buf;
   if (!AcceptToken (bf, config, "TrainingPlan"))
     return (0);
@@ -2166,7 +2166,7 @@ ReadTrainingPlan (struct slidingbuffer *bf, struct conf *config,
                "Runtime Error: Allocation failure in ReadTrainingPlan.\n");
       exit (1);
     }
-  memcpy ((void *) &buf, (void *) ret, sizeof (struct plans));
+  memcpy ((void *) ret, (void *) &buf, sizeof (struct plans));
   ret->next = net->plan;
   net->plan = ret;
   return (1);
@@ -2179,7 +2179,7 @@ ReadTestingPlan (struct slidingbuffer *bf, struct conf *config,
   assert (bf != NULL);
   assert (config != NULL);
   assert (net != NULL);
-  struct plans buf;
+  struct plans buf = {0};
   struct plans *ret = &buf;
   if (!AcceptToken (bf, config, "TestingPlan"))
     return (0);
@@ -2205,7 +2205,7 @@ ReadTestingPlan (struct slidingbuffer *bf, struct conf *config,
                "Runtime Error: Allocation failure in ReadTestingPlan.\n");
       exit (1);
     }
-  memcpy ((void *) &buf, (void *) ret, sizeof (struct plans));
+  memcpy ((void *) ret, (void *) &buf, sizeof (struct plans));
   ret->next = net->plan;
   net->plan = ret;
   return (1);
@@ -2218,7 +2218,7 @@ ReadValidationPlan (struct slidingbuffer *bf, struct conf *config,
   assert (bf != NULL);
   assert (config != NULL);
   assert (net != NULL);
-  struct plans buf;
+  struct plans buf = {0};
   struct plans *ret = &buf;
   if (!AcceptToken (bf, config, "ValidationPlan"))
     return (0);
@@ -2244,7 +2244,7 @@ ReadValidationPlan (struct slidingbuffer *bf, struct conf *config,
                "Runtime Error: Allocation failure in ReadValidationPlan.\n");
       exit (1);
     }
-  memcpy ((void *) &bf, (void *) ret, sizeof (struct plans));
+  memcpy ((void *) ret, (void *) &buf, sizeof (struct plans));
   ret->next = net->plan;
   net->plan = ret;
   return (1);
@@ -2257,7 +2257,7 @@ ReadDeploymentPlan (struct slidingbuffer *bf, struct conf *config,
   assert (bf != NULL);
   assert (config != NULL);
   assert (net != NULL);
-  struct plans buf;
+  struct plans buf = {0};
   struct plans *ret = &buf;
   if (!AcceptToken (bf, config, "DeploymentPlan"))
     return (0);
@@ -2283,7 +2283,7 @@ ReadDeploymentPlan (struct slidingbuffer *bf, struct conf *config,
                "Runtime Error: Allocation failure in ReadDeploymentPlan.\n");
       exit (1);
     }
-  memcpy ((void *) &bf, (void *) ret, sizeof (struct plans));
+  memcpy ((void *) ret, (void *) &buf, sizeof (struct plans));
   ret->next = net->plan;
   net->plan = ret;
   return (1);
