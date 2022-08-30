@@ -23,6 +23,38 @@ in src/forward.c, to run a new-style network. I don't, however, see that
 fwdprop() is called anywhere. Likely it needs some debugging before everything
 is plugged together.
 
+# important considerations
+
+I emailed bear and got this advice:
+
+> I would leverage some "experience" from private industry and stomp on three
+> tremendously important "practicalities" right from the beginning because it
+> will only get harder to add them.  GN was very much a "toy" project and
+> didn't have much interface with the real world. It had lots of knobs to
+> twiddle and lots of parameters to get stuck in parameter hell with but it
+> didn't address some practical needs of real users.
+>
+> First: Any of those knobs and parameters that are in the way of
+> parallelization on a good GPU, needs to be diked out or at least put behind
+> a big warning sign.
+>
+> Second: One of the most important things for any Neural-network software is
+> the ability to *SAVE YOUR WORK* in the middle and pick up where you left off
+> rather than starting over.  Seriously, computers crash.  You don't want a
+> computer crashing to mean that the forty hours or however long it's been
+> working on something to be lost.  You want to be able to pick up that forty
+> hours and continue, on that machine or some other.
+>
+> Third: Another terribly important practicality is that meaningful AI projects
+> are done on multiple machines, and you have to have ways for different
+> computers working on the same project to share their work. This is actually
+> far easier and lower bandwidth than you'd suppose, and it can even be done via
+> the "save" mechanism I put as Item 2. But it has to be designed in. It could
+> even be done meaningfully on low bandwidth internet connections.  But this
+> makes robustness even more important.  When somebody drops off the network or
+> quits, you don't want that to undo any work or disrupt any of the other
+> machines working on it.
+
 # gneural network was decommissioned?
 
 https://web.archive.org/web/20210916155331/http://www.gnu.org/software/gneuralnetwork/
