@@ -324,8 +324,8 @@ nnet_print (struct nnet *net)
 void
 network_run_algorithm (network * nn, network_config * config)
 {
-  static const
-    void (*supported_optimization_methods[]) (network *, network_config *) =
+  static
+    void (* const supported_optimization_methods[]) (network *, network_config *) =
   {
   [SIMULATED_ANNEALING] = simulated_annealing,
       [RANDOM_SEARCH] = random_search,
@@ -498,7 +498,8 @@ InsertNodes (struct nnet *net, int startloc, int newcount, int transferfn,
                "Runtime error: allocation failure while inserting nodes.\n");
       exit (1);
     }
-  newtrans[0] = newacc[0] = 0;
+  newtrans[0] = 0;
+  newacc[0] = 0;
   xwidth[0] = 1;                // reserve bias node
   if (net->transfer != NULL && net->accum != NULL
       && net->transferwidths != NULL)

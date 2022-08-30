@@ -15,7 +15,7 @@
 */
 
 #ifndef GENETIC_ALGORITHM_H
-#define GENETIC_ALGOTITHM_H
+#define GENETIC_ALGORITHM_H
 
 #include <network.h>
 

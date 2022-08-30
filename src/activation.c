@@ -37,7 +37,7 @@ activation (enum activation_function type, double x)
       return 2. / (1. + exp (-x)) - 1.;
       break;
     case SOFTSIGN:             // scaled from -1 to 1
-      return x / abs (x) + 1;
+      return x / fabs (x) + 1;
       break;
     case RAMP:
       return (x > 0.) ? x : 0.;
