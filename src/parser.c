@@ -1523,7 +1523,7 @@ ReadOpeningComment (struct slidingbuffer *bf, struct conf *config)
         }
       config->openingcomment[index++] = '\n';
     }
-  config->openingcomment[index] = '\0';
+  config->openingcomment[index++] = '\0';
   checkval = realloc (config->openingcomment, index);   // reduce allocation
   if (checkval != NULL)
     config->openingcomment = checkval;  // existing pointer value. It's not an allocation failure because we don't need to read more.
