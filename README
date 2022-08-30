@@ -26,3 +26,10 @@ The old gneural_network tests still run.
 $ autoreconf && ./configure && make -j8
 
 $ for test in tests/*.input; do src/gneural_network "$test"; done
+
+# nnet status
+
+It looks like .nnet script parsing is mostly implemented, as well as fwdprop()
+in src/forward.c, to run a new-style network. I don't, however, see that
+fwdprop() is called anywhere. Likely it needs some debugging before everything
+is plugged together.
