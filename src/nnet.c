@@ -113,7 +113,7 @@ GetFileNames (char *readname, struct conf *config, const char *arg)
       strcpy (config->savename, readname);
       config->savename[len] = 0;
     }
-  strcat (config->savename, "out");
+  strcat (config->savename, ".out");
 }
 
 
