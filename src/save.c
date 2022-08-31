@@ -303,10 +303,10 @@ nnetwriter (struct nnet *net, struct conf *config, FILE * out)
              && net->transferwidths[end + 1] == width)
         end++;
       if (width == 1)
-        fprintf (out, "    CreateInput( %d, %s, %s)\n", 1 + end - start,
+        fprintf (out, "    CreateInput( %d %s %s)\n", 1 + end - start,
                  acctokens[acc], outtokens[xfer]);
       else
-        fprintf (out, "    CreateInput( %d, %s, %s, %d)\n", 1 + end - start,
+        fprintf (out, "    CreateInput( %d %s %s %d)\n", 1 + end - start,
                  acctokens[acc], outtokens[xfer], width);
     }
   for (;
@@ -322,10 +322,10 @@ nnetwriter (struct nnet *net, struct conf *config, FILE * out)
              && net->transferwidths[end + 1] == width)
         end++;
       if (width == 1)
-        fprintf (out, "    CreateHidden( %d, %s, %s)\n", 1 + end - start,
+        fprintf (out, "    CreateHidden( %d %s %s)\n", 1 + end - start,
                  acctokens[acc], outtokens[xfer]);
       else
-        fprintf (out, "    CreateHidden( %d, %s, %s, %d)\n", 1 + end - start,
+        fprintf (out, "    CreateHidden( %d %s %s %d)\n", 1 + end - start,
                  acctokens[acc], outtokens[xfer], width);
     }
   for (start = end; end < net->nodecount; start = ++end)
@@ -338,10 +338,10 @@ nnetwriter (struct nnet *net, struct conf *config, FILE * out)
              && net->transferwidths[end + 1] == width)
         end++;
       if (width == 1)
-        fprintf (out, "    CreateOutput( %d, %s, %s)\n", 1 + end - start,
+        fprintf (out, "    CreateOutput( %d %s %s)\n", 1 + end - start,
                  acctokens[acc], outtokens[xfer]);
       else
-        fprintf (out, "    CreateOutput( %d, %s, %s, %d)\n", 1 + end - start,
+        fprintf (out, "    CreateOutput( %d %s %s %d)\n", 1 + end - start,
                  acctokens[acc], outtokens[xfer], width);
     }
   fprintf (out, "EndNodes\n");
