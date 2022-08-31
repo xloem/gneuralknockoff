@@ -480,8 +480,8 @@ InsertNodes (struct nnet *net, int startloc, int newcount, int transferfn,
     }
   if (net->nodecount == 0)
     {
+      // bias node not counted; include it. TODO: does using this code indicate some other code is not accounting for the bias node?
       net->nodecount++;
-      net->inputcount++;
       startloc++;
     }
   enum activation_function *newtrans = (enum activation_function *) malloc ((net->nodecount + newcount) * sizeof (int));
