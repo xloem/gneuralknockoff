@@ -175,9 +175,9 @@ main (int argc, char **argv)
                argv[0]);
       exit (1);
     }
-  bzero (&newt, sizeof (struct nnet));
-  bzero (&bf, sizeof (struct slidingbuffer));
-  bzero (&netconf, sizeof (struct conf));
+  memset (&newt, 0, sizeof (struct nnet));
+  memset (&bf, 0, sizeof (struct slidingbuffer));
+  memset (&netconf, 0, sizeof (struct conf));
   GetFileNames (filename, &netconf, argv[1]);
   if (NULL == (bf.input = fopen (filename, "r")))
     {
