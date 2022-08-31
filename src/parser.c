@@ -1190,7 +1190,7 @@ ReadQuotedString (struct slidingbuffer *bf, struct conf *config,
   *retstring = NULL;
   if (!AcceptToken (bf, config, "\""))
     return (0);
-  for (int index = 0; 1 == 1; index++)
+  for (int index = 0; 1 == 1; )
     {
       if (!ChAvailable (bf, 1))
         ErrStopParsing (bf,
