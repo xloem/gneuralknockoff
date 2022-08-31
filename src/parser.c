@@ -1797,24 +1797,28 @@ ReadDataStatement (struct slidingbuffer *bf, struct conf *config,
           newdata->flags |= DATA_DEPLOYMENT;
         SkipToNext (bf, config);
       }
-  while (TokenAvailable (bf, "ReadNoInput")
-         || TokenAvailable (bf, "ReadNoOutput")
+  while (TokenAvailable (bf, "NoInput")
+         || TokenAvailable (bf, "NoOutput")
          || TokenAvailable (bf, "ReadNoInput")
-         || TokenAvailable (bf, "ReadNoOutput"))
+         || TokenAvailable (bf, "ReadNoOutput")
+         || TokenAvailable (bf, "WriteNoInput")
+         || TokenAvailable (bf, "WriteNoOutput"))
     {
-      if (AcceptToken (bf, config, "ReadNoInput"))
+      if (AcceptToken (bf, config, "NoInput")
+          || AcceptToken (bf, config, "ReadNoInput"))
         {
           newdata->flags |= DATA_NOINPUT;
           newdata->inputcount = 0;
         }
-      else if (AcceptToken (bf, config, "ReadNoOutput"))
+      else if (AcceptToken (bf, config, "NoOutput")
+               || AcceptToken (bf, config, "ReadNoOutput"))
         {
           newdata->flags |= DATA_NOOUTPUT;
           newdata->outputcount = 0;
         }
-      else if (AcceptToken (bf, config, "ReadNoInput"))
+      else if (AcceptToken (bf, config, "WriteNoInput"))
         newdata->flags |= DATA_NOWRITEINPUT;
-      else if (AcceptToken (bf, config, "ReadNoOutput"))
+      else if (AcceptToken (bf, config, "WriteNoOutput"))
         newdata->flags |= DATA_NOWRITEOUTPUT;
       SkipToNext (bf, config);
     }
