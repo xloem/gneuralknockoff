@@ -351,8 +351,9 @@ nnetwriter (struct nnet *net, struct conf *config, FILE * out)
       fprintf (out, "StartConnections\n");
       // The logic in this while/switch construction is excessively intricate. Be careful and test a lot if you need to screw with it. - RD
       int state, backtrack, conn, firstfrom, firstto, lastfrom, lastto, nex;
-      start = end = state = conn = firstfrom = firstto = lastfrom = lastto =
+      start = end = conn = firstfrom = firstto = lastfrom = lastto =
         nex = 0;
+      state = conn >= net->synapsecount ? 4 : 0;
       while (state != 4)
         switch (state)
           {
@@ -361,7 +362,7 @@ nnetwriter (struct nnet *net, struct conf *config, FILE * out)
             lastfrom = firstfrom = net->sources[conn];
             lastto = firstto = net->dests[conn];
             backtrack = nex = conn + 1;
-            state = conn >= net->synapsecount ? 4 : 1;
+            state = 1;
             break;
           case 1:
             if (net->sources[nex] == net->sources[conn]
@@ -459,13 +460,8 @@ nnetwriter (struct nnet *net, struct conf *config, FILE * out)
               }
             else
               fprintf (out, FLOFMT "\n", net->weights[start]);
-            if (end == net->synapsecount)
-              state = 4;
-            else
-              {
-                state = 0;
-                conn = end + 1;
-              }
+            conn = end + 1;
+            state = conn >= net->synapsecount ? 4 : 0;
           case 4:
             break;
           default:
