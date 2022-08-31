@@ -292,7 +292,7 @@ nnetwriter (struct nnet *net, struct conf *config, FILE * out)
 
   fprintf (out, "StartNodes\n");
   for (start = end = 1;
-       net->inputcount > 0 && end < net->inputcount
+       net->inputcount > 0 && end <= net->inputcount
        && end + 1 < net->nodecount; start = ++end)
     {
       acc = net->accum[start];
