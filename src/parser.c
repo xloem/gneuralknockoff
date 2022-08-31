@@ -1681,7 +1681,7 @@ ReadImmediateCase (struct slidingbuffer *bf, struct conf *config,
     return (0);
   if (dat->data == NULL)
     {
-      dat->data = (flotype *) calloc (16, casesize * sizeof (flotype));
+      dat->data = (flotype *) malloc (16 * casesize * sizeof (flotype));
       dat->entrycount = 16;
     }
   if (dat->data == NULL)
@@ -1861,7 +1861,8 @@ ReadDataStatement (struct slidingbuffer *bf, struct conf *config,
                     newdata);
   size_t casecount = 0;
   if ((newdata->flags & DATA_IMMEDIATE) != 0x0)
-    while (ReadImmediateCase (bf, config, newdata, casecount++));
+    while (ReadImmediateCase (bf, config, newdata, casecount))
+      casecount++;
   newdata->entrycount = casecount;
   newdata->data =
     (flotype *) realloc (newdata->data,
