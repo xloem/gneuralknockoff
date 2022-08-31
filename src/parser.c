@@ -1001,7 +1001,7 @@ ReadInteger (struct slidingbuffer *bf, struct conf *config)
   assert (bf != NULL);
   assert (config != NULL);
   assert (NumberAvailable (bf));
-  static const int maxlen = (int) (log10 (INT_MAX)) + 2;
+  static const int maxlen = (int) sizeof(int) * 2.40824 + 2; // 2.4 is log10(256)
   char buf[maxlen];
   ChAvailable (bf, 2);
   int count = 0;

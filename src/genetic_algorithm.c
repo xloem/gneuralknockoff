@@ -38,7 +38,7 @@ memswap (void *a, void *b, size_t size)
 
 void *
 partition (void *data, size_t element_count, size_t element_size,
-           __compar_fn_t cmp_func)
+           int (*cmp_func)(const void *, const void *))
 {
   void *pivot = data + (element_count - 1) * element_size;
   void *i = data;
@@ -58,7 +58,7 @@ partition (void *data, size_t element_count, size_t element_size,
 
 void
 par_qsort (void *data, size_t element_count, size_t element_size,
-           __compar_fn_t cmp_func)
+           int (*cmp_func)(const void *, const void *))
 {
   if (element_count < PAR_QSORT_LOW_LIMIT)
     {
