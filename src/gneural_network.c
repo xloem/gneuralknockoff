@@ -1,17 +1,21 @@
-/* gneural_network.c -- This belongs to gneural_network
-
-   gneural_network is the GNU package which implements a programmable neural network.
-
+/*
+   Copyright (C) 2022 Karl Semich <0xloem@gmail.com>
    Copyright (C) 2016-2017 Jean Michel Sellier <jeanmichel.sellier@gmail.com>
 
-   This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software
-   Foundation; either version 3, or (at your option) any later version.
+   This file is part of Gneural Knockoff.
 
-   This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
-   A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+   Gneural Knockoff is free software; you can redistribute it and/or modify it
+   under the terms of the GNU Affero General Public License as published by the
+   Free Software Foundation; either version 3, or (at your option) any later
+   version.
 
-   You should have received a copy of the GNU General Public License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+   Gneural Knockoff is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+   or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Affero General Public
+   License for more details.
 
+   You should have received a copy of the GNU Affero General Public License
+   along with Gneural Knockoff.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 /*
@@ -125,7 +129,7 @@ Copyright (C) %s Jean Michel Sellier.\n\n\
 There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A\n\
 PARTICULAR PURPOSE.\n\
 You may redistribute copies of GNU %s under the terms\n\
-of the GNU General Public License.\n\
+of the GNU Affero General Public License.\n\
 For more information about these matters, see the file named COPYING.\n", "2016-2017", "Gneural Network");
       exit (0);
     }

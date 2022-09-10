@@ -1,3 +1,14 @@
+--- gneural_knockoff release 0.9.2
+
+    [day] Sep 2022, [name], 0xloem@gmail.com
+
+    A new release is not yet ready.
+
+    I have put some work into stabilising the existing code more. I would
+    prefer to merge the two parsing and processing systems together.
+
+    I hope more contributions may happen.
+
 --- gneural_network release 0.9.1
 
     03 May 2016, J.M. Sellier, jeanmichel.sellier@gmail.com

@@ -1,4 +1,6 @@
-This is a fork of Gneural Network that has not been decommissioned.
+This is a fork of Gneural Networks that has not been decommissioned.
+
+Please contribute improvements.
 
 I would hope to make a modular library of neural network components capable of
 training and inference of modern machine learning models like those in the
@@ -9,8 +11,9 @@ rather than a plan to reach completion.
 
 # examples
 
-When dev left off, the system was midway through migrating from the gneural_network/*.input format to a new nnet/*.nnet format.
-The old gneural_network tests still run.
+When dev left off, the system was midway through migrating from the
+gneural_network/*.input format to a new nnet/*.nnet format.  The old
+gneural_network tests still run.
 
 $ autoreconf && ./configure && make -j8
 
@@ -35,8 +38,8 @@ I emailed bear and got this advice:
 > didn't address some practical needs of real users.
 >
 > First: Any of those knobs and parameters that are in the way of
-> parallelization on a good GPU, needs to be diked out or at least put behind
-> a big warning sign.
+> parallelization on a good GPU, needs to be diked out or at least put behind a
+> big warning sign.
 >
 > Second: One of the most important things for any Neural-network software is
 > the ability to *SAVE YOUR WORK* in the middle and pick up where you left off
@@ -48,12 +51,12 @@ I emailed bear and got this advice:
 > Third: Another terribly important practicality is that meaningful AI projects
 > are done on multiple machines, and you have to have ways for different
 > computers working on the same project to share their work. This is actually
-> far easier and lower bandwidth than you'd suppose, and it can even be done via
-> the "save" mechanism I put as Item 2. But it has to be designed in. It could
-> even be done meaningfully on low bandwidth internet connections.  But this
-> makes robustness even more important.  When somebody drops off the network or
-> quits, you don't want that to undo any work or disrupt any of the other
-> machines working on it.
+> far easier and lower bandwidth than you'd suppose, and it can even be done
+> via the "save" mechanism I put as Item 2. But it has to be designed in. It
+> could even be done meaningfully on low bandwidth internet connections.  But
+> this makes robustness even more important.  When somebody drops off the
+> network or quits, you don't want that to undo any work or disrupt any of the
+> other machines working on it.
 
 > You should check the associated bug database because I think I might have
 > been tracking my "todo's" as bugs that needed fixing. I can't promise it
