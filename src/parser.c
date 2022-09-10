@@ -588,8 +588,14 @@ processing the input file\n\
         {
 
         case _COMMENT:
-          fgets (s, 80, fp);
-          printf ("COMMENT ---> %s", s);
+          {
+            char * ret;
+            s[0] = 0;
+            ret = fgets (s, 80, fp);
+            printf ("COMMENT ---> %s", s);
+            if (ret == 0)
+              return;
+          }
           break;
 
         case _NUMBER_OF_NEURONS:
