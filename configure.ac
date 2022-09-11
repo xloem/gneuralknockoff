@@ -21,7 +21,7 @@
 
 
 AC_PREREQ([2.69])
-AC_INIT([gneural], [0.0.1.2], [jeanmichel.sellier@gmail.com])
+AC_INIT([Gneural Knockoff], [0.9.2.dev], [0xloem@gmail.com], [gneural_knockoff])
 AC_CONFIG_SRCDIR([src/gneural_network.c],[src/nnet.c])
 #AC_CONFIG_HEADERS([config.h])
 AM_INIT_AUTOMAKE
