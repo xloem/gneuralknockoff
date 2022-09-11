@@ -3,8 +3,6 @@ AUTOMAKE_OPTIONS = foreign subdir-objects
 AM_CFLAGS = -Wall -O3 -fopenmp -I$(top_srcdir)/include
 AM_LDFLAGS =
 
-bin_PROGRAMS = gneural_network nnet
-
 noinst_HEADERS = \
   include/includes.h \
   include/defines.h \
@@ -24,6 +22,10 @@ noinst_HEADERS = \
   include/parser.h \
   include/random_search.h \
   include/save.h
+
+EXTRA_DIST = doc tests
+
+bin_PROGRAMS = gneural_network nnet
 
 gneural_network_SOURCES = \
   src/activation.c \
